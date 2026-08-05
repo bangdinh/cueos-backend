@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from database.database import get_db
-from database.models import UserModel
+from database.models import UserModel, UserRole
 
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "BIDA_AI_SECURE_JWT_SECRET_KEY_2026_CHANGE_IN_PROD")
 JWT_ALGORITHM = "HS256"
@@ -81,7 +81,7 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
     if user:
         if p_clean == user.password_hash:
             is_valid_pass = True
-        elif user.role == "SUPER_ADMIN" and p_clean in ["secret", "admin", "123456", "superadmin"]:
+        elif user.role == UserRole.SUPER_ADMIN.value and p_clean in ["secret", "admin", "123456", "superadmin"]:
             is_valid_pass = True
             
     if not user or not is_valid_pass:
@@ -91,8 +91,8 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    role_str = user.role.upper() if user.role else "STORE_MANAGER"
-    store_id = None if role_str == "SUPER_ADMIN" else user.store_id
+    role_str = user.role.upper() if user.role else "MANAGER"
+    store_id = None if role_str == UserRole.SUPER_ADMIN.value else user.store_id
     
     active_sid = ACTIVE_USER_SESSIONS.get(user.id)
     if active_sid:

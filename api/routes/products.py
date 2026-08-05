@@ -51,6 +51,7 @@ def list_products(store_id: int = None, ctx: StoreContext = Depends(get_store_co
 
 @router.post("/products/add")
 def add_product(payload: dict, ctx: StoreContext = Depends(get_store_context)):
+    ctx.require_admin_permission()
     name = payload.get("name", "").strip()
     price = float(payload.get("price", 0))
     stock = int(payload.get("stock", 0))
@@ -81,6 +82,7 @@ def add_product(payload: dict, ctx: StoreContext = Depends(get_store_context)):
 
 @router.post("/products/update")
 def update_product(payload: dict, ctx: StoreContext = Depends(get_store_context)):
+    ctx.require_admin_permission()
     prod_id = int(payload.get("id"))
     price = float(payload.get("price", 0))
     stock = int(payload.get("stock", 0))
@@ -110,6 +112,7 @@ def update_product(payload: dict, ctx: StoreContext = Depends(get_store_context)
 
 @router.delete("/products/delete/{prod_id}")
 def delete_product(prod_id: int, ctx: StoreContext = Depends(get_store_context)):
+    ctx.require_admin_permission()
     db = SessionLocal()
     try:
         product = db.query(Product).filter(Product.id == prod_id, Product.store_id == ctx.store_id).first() if ctx.role.value != 'SUPER_ADMIN' else db.query(Product).filter(Product.id == prod_id).first()
@@ -126,6 +129,7 @@ def delete_product(prod_id: int, ctx: StoreContext = Depends(get_store_context))
 
 @router.post("/products/batch-update")
 def batch_update_products(payload: dict, ctx: StoreContext = Depends(get_store_context)):
+    ctx.require_admin_permission()
     items = payload.get("items", [])
     if not items:
         return JSONResponse({"status": "error", "message": "Không có sản phẩm nào để cập nhật!"}, status_code=400)
@@ -161,6 +165,7 @@ def batch_update_products(payload: dict, ctx: StoreContext = Depends(get_store_c
 
 @router.post("/products/batch-delete")
 def batch_delete_products(payload: dict, ctx: StoreContext = Depends(get_store_context)):
+    ctx.require_admin_permission()
     ids = payload.get("ids", [])
     if not ids:
         return JSONResponse({"status": "error", "message": "Vui lòng chọn sản phẩm cần xóa!"}, status_code=400)

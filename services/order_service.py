@@ -1,7 +1,7 @@
 import time
 from sqlalchemy.orm import Session
 from database.models import SessionOrderItem, PlaySession, BilliardTable
-from services.inventory_service import InventoryService
+from services.product_service import ProductService
 from services.notification_service import NotificationService
 from typing import List, Dict, Any
 
@@ -34,7 +34,7 @@ class OrderService:
             if not item_name or quantity <= 0:
                 continue
                 
-            InventoryService.decrease_stock_by_name(db, item_name, quantity)
+            ProductService.decrease_stock_by_name(db, item_name, quantity)
 
             existing_item = db.query(SessionOrderItem).filter(
                 SessionOrderItem.session_id == active_session.id,
@@ -114,7 +114,7 @@ class OrderService:
             if not item_name or quantity <= 0 or price < 0:
                 continue
                 
-            InventoryService.decrease_stock_by_name(db, item_name, quantity)
+            ProductService.decrease_stock_by_name(db, item_name, quantity)
 
             existing_item = db.query(SessionOrderItem).filter(
                 SessionOrderItem.session_id == active_session.id,
@@ -172,7 +172,7 @@ class OrderService:
         # (This is simplified, a full system would adjust stock based on diff)
         diff = new_quantity - item.quantity
         if diff > 0:
-             InventoryService.decrease_stock_by_name(db, item_name, diff)
+             ProductService.decrease_stock_by_name(db, item_name, diff)
         elif diff < 0:
              # Find product and increase stock (if keeping tracking)
              pass 

@@ -79,6 +79,7 @@ def list_tables(store_id: int = None, ctx: StoreContext = Depends(get_store_cont
 
 @router.post("/admin/tables/add")
 def admin_add_table(payload: dict, ctx: StoreContext = Depends(get_store_context)):
+    ctx.require_admin_permission()
     name = payload.get("name", "").strip()
     table_type = payload.get("table_type", "LIP")
     table_tier = payload.get("table_tier", "STANDARD")
@@ -109,6 +110,7 @@ def admin_add_table(payload: dict, ctx: StoreContext = Depends(get_store_context
 
 @router.post("/admin/tables/update")
 def admin_update_table(payload: dict, ctx: StoreContext = Depends(get_store_context)):
+    ctx.require_admin_permission()
     table_id = payload.get("id")
     name = payload.get("name", "").strip()
     table_type = payload.get("table_type", "LIP")
@@ -139,6 +141,7 @@ def admin_update_table(payload: dict, ctx: StoreContext = Depends(get_store_cont
 
 @router.delete("/admin/tables/{table_id}")
 def admin_delete_table(table_id: int, ctx: StoreContext = Depends(get_store_context)):
+    ctx.require_admin_permission()
     db = SessionLocal()
     try:
         table = db.query(BilliardTable).filter(BilliardTable.id == table_id, BilliardTable.store_id == ctx.store_id).first() if ctx.role.value != 'SUPER_ADMIN' else db.query(BilliardTable).filter(BilliardTable.id == table_id).first()

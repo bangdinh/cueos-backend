@@ -130,7 +130,8 @@ def customer_order(table_id: int, token: str, payload: dict):
         db.close()
 
 @router.post("/session/start/{table_id}")
-def start_session(table_id: int):
+def start_session(table_id: int, ctx: StoreContext = Depends(get_store_context)):
+    ctx.require_write_permission()
     db = SessionLocal()
     try:
         table = db.query(BilliardTable).filter(BilliardTable.id == table_id).first()
@@ -157,7 +158,8 @@ def start_session(table_id: int):
         db.close()
 
 @router.post("/session/add-item/{table_id}")
-def add_item_to_session(table_id: int, payload: dict):
+def add_item_to_session(table_id: int, payload: dict, ctx: StoreContext = Depends(get_store_context)):
+    ctx.require_write_permission()
     item_name = payload.get("item_name", "").strip()
     quantity = int(payload.get("quantity", 1))
     price = float(payload.get("price", 0))
@@ -201,7 +203,8 @@ def add_item_to_session(table_id: int, payload: dict):
         db.close()
 
 @router.post("/session/add-items/{table_id}")
-def add_items_to_session(table_id: int, payload: dict):
+def add_items_to_session(table_id: int, payload: dict, ctx: StoreContext = Depends(get_store_context)):
+    ctx.require_write_permission()
     items = payload.get("items", [])
     
     if not items or len(items) == 0:
@@ -276,7 +279,8 @@ def add_items_to_session(table_id: int, payload: dict):
         db.close()
 
 @router.delete("/session/item/{item_id}")
-def delete_session_item(item_id: int):
+def delete_session_item(item_id: int, ctx: StoreContext = Depends(get_store_context)):
+    ctx.require_write_permission()
     db = SessionLocal()
     try:
         item = db.query(SessionOrderItem).filter(SessionOrderItem.id == item_id).first()
@@ -310,7 +314,8 @@ def delete_session_item(item_id: int):
         db.close()
 
 @router.post("/session/item/{item_id}/update")
-def update_session_item(item_id: int, payload: dict):
+def update_session_item(item_id: int, payload: dict, ctx: StoreContext = Depends(get_store_context)):
+    ctx.require_write_permission()
     new_qty = int(payload.get("quantity", 0))
     db = SessionLocal()
     try:
@@ -352,7 +357,8 @@ def update_session_item(item_id: int, payload: dict):
         db.close()
 
 @router.post("/session/stop/{table_id}")
-def stop_session(table_id: int):
+def stop_session(table_id: int, ctx: StoreContext = Depends(get_store_context)):
+    ctx.require_write_permission()
     db = SessionLocal()
     try:
         table = db.query(BilliardTable).filter(BilliardTable.id == table_id).first()
@@ -459,7 +465,8 @@ def poll_client(table_id: int):
     return JSONResponse({"has_message": False})
 
 @router.post("/session/transfer/{from_table_id}/{to_table_id}")
-def transfer_session(from_table_id: int, to_table_id: int):
+def transfer_session(from_table_id: int, to_table_id: int, ctx: StoreContext = Depends(get_store_context)):
+    ctx.require_write_permission()
     db = SessionLocal()
     try:
         if from_table_id == to_table_id:
@@ -573,7 +580,8 @@ def get_history(store_id: int = None, ctx: StoreContext = Depends(get_store_cont
         db.close()
 
 @router.delete("/history")
-def delete_history(payload: dict):
+def delete_history(payload: dict, ctx: StoreContext = Depends(get_store_context)):
+    ctx.require_admin_permission()
     ids = payload.get("ids", [])
     if not ids:
         return JSONResponse({"status": "error", "message": "Không có hóa đơn nào được chọn"}, status_code=400)

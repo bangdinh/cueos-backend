@@ -1186,6 +1186,11 @@ admin_html = """<!DOCTYPE html>
             border-color: rgba(99,102,241,0.6) !important;
             box-shadow: none !important;
         }
+        /* body.is-manager .admin-only { display: none !important; } removed per request */
+        body.is-super-admin .write-action,
+        body.is-super-admin .admin-only {
+            display: none !important;
+        }
     </style>
 </head>
 <body>
@@ -1602,7 +1607,7 @@ admin_html = """<!DOCTYPE html>
 
             <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #9ca3af;">
                 <span>* Chỉ có thể xóa các phiên chơi có thời gian kết thúc quá 48 giờ.</span>
-                <button onclick="deleteSelectedHistory()" id="btn-delete-history" style="padding: 6px 14px; border-radius: 6px; border: none; background: #ef4444; color: white; font-weight: bold; cursor: pointer; transition: background 0.2s; opacity: 0.5;" disabled>🗑️ Xóa đã chọn</button>
+                <button onclick="deleteSelectedHistory()" id="btn-delete-history" class="admin-only" style="padding: 6px 14px; border-radius: 6px; border: none; background: #ef4444; color: white; font-weight: bold; cursor: pointer; transition: background 0.2s; opacity: 0.5;" disabled>🗑️ Xóa đã chọn</button>
             </div>
 
             <div style="max-height: 400px; overflow-y: auto; background: rgba(0,0,0,0.25); border-radius: 12px; border: 1px solid rgba(255,255,255,0.06);">
@@ -1670,7 +1675,7 @@ admin_html = """<!DOCTYPE html>
                         <input type="number" id="new-prod-stock" placeholder="Tồn ban đầu" style="height: 38px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: white; padding: 0 10px; font-size: 13px; outline: none;">
                     </div>
                     <input type="text" id="new-prod-image" placeholder="Link hình ảnh (Ví dụ: https://... hoặc để trống)" style="height: 38px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: white; padding: 0 10px; font-size: 13px; outline: none; margin-bottom: 4px;">
-                    <button onclick="addNewProduct()" style="height: 36px; border-radius: 6px; border: none; background: linear-gradient(135deg, #10b981, #059669); color: white; font-weight: bold; cursor: pointer; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">Thêm sản phẩm</button>
+                    <button onclick="addNewProduct()" class="admin-only" style="height: 36px; border-radius: 6px; border: none; background: linear-gradient(135deg, #10b981, #059669); color: white; font-weight: bold; cursor: pointer; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">Thêm sản phẩm</button>
                 </div>
 
                 <!-- Danh sách sản phẩm hiện tại -->
@@ -1678,8 +1683,8 @@ admin_html = """<!DOCTYPE html>
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                         <div style="font-weight: 700; color: #fbbf24; font-size: 14px;">Danh sách thực phẩm trong kho:</div>
                         <div style="display: flex; gap: 8px;">
-                            <button onclick="saveAllProducts()" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">💾 Lưu tất cả</button>
-                            <button onclick="deleteSelectedProducts()" style="background: linear-gradient(135deg, #ef4444, #dc2626); color: white; border: none; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">🗑️ Xóa đã chọn</button>
+                            <button onclick="saveAllProducts()" class="admin-only" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">💾 Lưu tất cả</button>
+                            <button onclick="deleteSelectedProducts()" class="admin-only" style="background: linear-gradient(135deg, #ef4444, #dc2626); color: white; border: none; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">🗑️ Xóa đã chọn</button>
                         </div>
                     </div>
 
@@ -1726,7 +1731,7 @@ admin_html = """<!DOCTYPE html>
                         <input type="number" id="new-table-price" placeholder="Giá/giờ (VNĐ)" style="height: 38px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: white; padding: 0 10px; font-size: 13px; outline: none;">
                     </div>
                     <input type="text" id="new-table-cam" placeholder="Camera ID (0, 1, 2...) hoặc RTSP URL" style="height: 38px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: white; padding: 0 10px; font-size: 13px; outline: none; margin-bottom: 4px;">
-                    <button onclick="addNewAdminTable()" style="height: 36px; border-radius: 6px; border: none; background: linear-gradient(135deg, #10b981, #059669); color: white; font-weight: bold; cursor: pointer; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">Thêm Bàn</button>
+                    <button onclick="addNewAdminTable()" class="admin-only" style="height: 36px; border-radius: 6px; border: none; background: linear-gradient(135deg, #10b981, #059669); color: white; font-weight: bold; cursor: pointer; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">Thêm Bàn</button>
                 </div>
 
                 <!-- Danh sách bàn hiện tại -->
@@ -1851,7 +1856,7 @@ admin_html = """<!DOCTYPE html>
             
             <div style="display: flex; gap: 10px; width: 100%;">
                 <button class="btn btn-confirm" style="flex: 1; justify-content: center; font-size: 14px; padding: 12px; background: linear-gradient(135deg, #3b82f6, #2563eb);" onclick="printBill()">🖨️ In Bill Tạm Tính</button>
-                <button id="bill-confirm-btn" class="btn btn-confirm" style="flex: 1; justify-content: center; font-size: 14px; padding: 12px;" onclick="closeBillModal()">✔️ Xác nhận & Thu tiền</button>
+                <button id="bill-confirm-btn" class="btn btn-confirm write-action" style="flex: 1; justify-content: center; font-size: 14px; padding: 12px;" onclick="closeBillModal()">✔️ Xác nhận & Thu tiền</button>
             </div>
         </div>
     </div>
@@ -1888,7 +1893,7 @@ admin_html = """<!DOCTYPE html>
                             <span>Tổng cộng:</span>
                             <span id="pos-total-price" style="color: #34d399;">0đ</span>
                         </div>
-                        <button id="pos-submit-btn" onclick="submitPosOrder()" style="width: 100%; padding: 14px; background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer;">Xác nhận thêm vào Bàn</button>
+                        <button id="pos-submit-btn" class="write-action" onclick="submitPosOrder()" style="width: 100%; padding: 14px; background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer;">Xác nhận thêm vào Bàn</button>
                     </div>
                 </div>
             </div>
@@ -2355,6 +2360,10 @@ admin_html = """<!DOCTYPE html>
         }
 
         function deleteSelectedHistory() {
+            if (localStorage.getItem("user_role") === "MANAGER") {
+                alert("Bạn ko có quyền xóa lịch sử, hãy liên hệ admin tại cơ sở!");
+                return;
+            }
             var checkboxes = document.querySelectorAll('.chk-history:checked');
             var ids = Array.from(checkboxes).map(function(c) { return parseInt(c.value); });
             if (ids.length === 0) return;
@@ -2568,7 +2577,7 @@ admin_html = """<!DOCTYPE html>
                     
                     // Nut Thanh toan
                     var btnStop = document.createElement("button");
-                    btnStop.className = "btn btn-confirm btn-small";
+                    btnStop.className = "btn btn-confirm btn-small write-action";
                     btnStop.innerHTML = "🔴 Thanh toán";
                     btnStop.addEventListener("click", function() {
                         checkoutSession(t.id);
@@ -2599,7 +2608,7 @@ admin_html = """<!DOCTYPE html>
                 } else {
                     // Nut Bat dau choi
                     var btnStart = document.createElement("button");
-                    btnStart.className = "btn btn-confirm btn-small";
+                    btnStart.className = "btn btn-confirm btn-small write-action";
                     btnStart.style.background = "linear-gradient(135deg, #6366f1, #4f46e5)";
                     btnStart.innerHTML = "🟢 Bắt đầu chơi";
                     btnStart.addEventListener("click", function() {
@@ -2953,9 +2962,9 @@ admin_html = """<!DOCTYPE html>
                         var safeName = itemName.replace(/'/g, "\\'").replace(/"/g, '&quot;');
                         actionsHtml = 
                             "<span style='float:right; display:inline-flex; align-items:center; gap:4px; margin-left:8px;'>" +
-                                "<button onclick='updateBillItemQty(" + item.id + ", " + (item.quantity - 1) + ", " + bill.table_id + ")' style='background:#374151; color:white; border:none; border-radius:4px; width:22px; height:22px; cursor:pointer; font-weight:bold; display:inline-flex; align-items:center; justify-content:center;' title='Giảm 1'>-</button>" +
-                                "<button onclick='updateBillItemQty(" + item.id + ", " + (item.quantity + 1) + ", " + bill.table_id + ")' style='background:#374151; color:white; border:none; border-radius:4px; width:22px; height:22px; cursor:pointer; font-weight:bold; display:inline-flex; align-items:center; justify-content:center;' title='Tăng 1'>+</button>" +
-                                "<button onclick='deleteBillItem(" + item.id + ", " + bill.table_id + ", \\\"" + safeName + "\\\")' style='background:#ef4444; color:white; border:none; border-radius:4px; padding:2px 6px; cursor:pointer; font-size:11px;' title='Xóa món'>🗑️</button>" +
+                                "<button class='write-action' onclick='updateBillItemQty(" + item.id + ", " + (item.quantity - 1) + ", " + bill.table_id + ")' style='background:#374151; color:white; border:none; border-radius:4px; width:22px; height:22px; cursor:pointer; font-weight:bold; display:inline-flex; align-items:center; justify-content:center;' title='Giảm 1'>-</button>" +
+                                "<button class='write-action' onclick='updateBillItemQty(" + item.id + ", " + (item.quantity + 1) + ", " + bill.table_id + ")' style='background:#374151; color:white; border:none; border-radius:4px; width:22px; height:22px; cursor:pointer; font-weight:bold; display:inline-flex; align-items:center; justify-content:center;' title='Tăng 1'>+</button>" +
+                                "<button class='write-action' onclick='deleteBillItem(" + item.id + ", " + bill.table_id + ", \\\"" + safeName + "\\\")' style='background:#ef4444; color:white; border:none; border-radius:4px; padding:2px 6px; cursor:pointer; font-size:11px;' title='Xóa món'>🗑️</button>" +
                             "</span>";
                     }
                     
@@ -3424,6 +3433,10 @@ admin_html = """<!DOCTYPE html>
         }
 
         function saveAllProducts() {
+            if (localStorage.getItem("user_role") === "MANAGER") {
+                alert("Bạn ko có quyền lưu thay đổi, hãy liên hệ admin tại cơ sở!");
+                return;
+            }
             if (!window.currentProdsList || window.currentProdsList.length === 0) {
                 alert("Không có sản phẩm nào để lưu!");
                 return;
@@ -3479,6 +3492,10 @@ admin_html = """<!DOCTYPE html>
         }
 
         function deleteSelectedProducts() {
+            if (localStorage.getItem("user_role") === "MANAGER") {
+                alert("Bạn ko có quyền xóa sản phẩm, hãy liên hệ admin tại cơ sở!");
+                return;
+            }
             var selectedIds = [];
             var chks = document.querySelectorAll(".chk-prod:checked");
             chks.forEach(function(c) {
@@ -3513,6 +3530,10 @@ admin_html = """<!DOCTYPE html>
         }
 
         function addNewProduct() {
+            if (localStorage.getItem("user_role") === "MANAGER") {
+                alert("Bạn ko có quyền thêm sản phẩm hãy liên hệ admin tại cơ sở");
+                return;
+            }
             var name = document.getElementById("new-prod-name").value.trim();
             var categoryInput = document.getElementById("new-prod-category");
             var category = (categoryInput ? categoryInput.value.trim() : "") || "Thức uống";
@@ -3865,6 +3886,10 @@ admin_html = """<!DOCTYPE html>
         }
 
         function addNewAdminTable() {
+            if (localStorage.getItem("user_role") === "MANAGER") {
+                alert("Bạn ko có quyền thêm bàn, hãy liên hệ admin tại cơ sở!");
+                return;
+            }
             var name = document.getElementById("new-table-name").value.trim();
             var type = document.getElementById("new-table-type").value;
             var tier = document.getElementById("new-table-tier").value;
@@ -4188,7 +4213,7 @@ admin_html = """<!DOCTYPE html>
 
                     if (isTransferRequest) {
                         var btnApprove = document.createElement("button");
-                        btnApprove.className = "btn btn-confirm";
+                        btnApprove.className = "btn btn-confirm write-action";
                         btnApprove.style.background = "linear-gradient(135deg, #10b981, #059669)";
                         btnApprove.style.flex = "1";
                         btnApprove.innerHTML = "&#10004; Xác nhận";
@@ -4210,7 +4235,7 @@ admin_html = """<!DOCTYPE html>
                         actions.appendChild(btnReject);
                     } else {
                         var btnApprove = document.createElement("button");
-                        btnApprove.className = "btn btn-confirm";
+                        btnApprove.className = "btn btn-confirm write-action";
                         btnApprove.style.background = "linear-gradient(135deg, #10b981, #059669)";
                         btnApprove.style.flex = "1";
                         btnApprove.innerHTML = "&#10004; Xác nhận đã phục vụ";
@@ -4221,7 +4246,7 @@ admin_html = """<!DOCTYPE html>
                     }
                 } else {
                     var btnConfirm = document.createElement("button");
-                    btnConfirm.className = "btn btn-confirm";
+                    btnConfirm.className = "btn btn-confirm write-action";
                     btnConfirm.innerHTML = "&#10004; Chay ra phuc vu";
                     btnConfirm.addEventListener("click", function() {
                         handleAction(card, "confirm");
@@ -4886,7 +4911,7 @@ admin_html = """<!DOCTYPE html>
                     if (subEl) subEl.textContent = "Quản lý Độc Lập - Quyền Thu Ngân & Cửa Hàng Trưởng";
                     if (roleBadge) {
                         roleBadge.innerHTML = "👤 " + (payload.username || "manager") + " | 🏨 Quán " + stId;
-                        roleBadge.style.background = "linear-gradient(135deg, #10b981, #059669)";
+                        roleBadge.style.background = (payload.role === "ADMIN") ? "linear-gradient(135deg, #6366f1, #4f46e5)" : "linear-gradient(135deg, #10b981, #059669)";
                     }
                     var hqPanel = document.getElementById("hq-revenue-panel");
                     if (hqPanel) hqPanel.style.display = "none";
@@ -5158,6 +5183,11 @@ admin_html = """<!DOCTYPE html>
             var role = localStorage.getItem("user_role");
             if (role !== "SUPER_ADMIN") {
                 document.body.classList.add("manager-mode");
+            }
+            if (role === "MANAGER") {
+                document.body.classList.add("is-manager");
+            } else if (role === "SUPER_ADMIN") {
+                document.body.classList.add("is-super-admin");
             }
         });
     </script>

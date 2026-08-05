@@ -160,8 +160,8 @@ def list_clips():
 def list_stores(ctx: StoreContext = Depends(get_store_context)):
     db = SessionLocal()
     try:
-        from database.models import StoreModel
-        stores = db.query(StoreModel).order_by(StoreModel.id).all()
+        from services.store_service import StoreService
+        stores = StoreService.get_all_stores(db)
         return JSONResponse({'data': [{'id': s.id, 'name': s.name} for s in stores], 'status': 'ok'})
     finally:
         db.close()
@@ -236,10 +236,12 @@ def get_revenue_comparison(period: str = 'month', store_ids: str = None, ctx: St
             store_stats[sid]['live_count'] += 1
 
         # Get store info
-        stores_q = db.query(StoreModel)
+        from services.store_service import StoreService
+        stores = StoreService.get_all_stores(db)
         if filter_ids:
-            stores_q = stores_q.filter(StoreModel.id.in_(filter_ids))
-        store_map = {s.id: s.name for s in stores_q.all()}
+            store_map = {s.id: s.name for s in stores if s.id in filter_ids}
+        else:
+            store_map = {s.id: s.name for s in stores}
 
         # Build result
         result = []
@@ -325,7 +327,8 @@ def get_hq_overview(ctx: StoreContext = Depends(get_store_context)):
         else:
             month_growth = 12.0 if month_rev > 0 else 0.0
 
-        stores = db.query(StoreModel).order_by(StoreModel.id).all()
+        from services.store_service import StoreService
+        stores = StoreService.get_all_stores(db)
         total_stores = len(stores)
         all_tables = db.query(BilliardTable).all()
         total_tables = len(all_tables)

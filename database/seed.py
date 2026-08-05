@@ -1,6 +1,5 @@
 from sqlalchemy.orm import Session
-from database.models import StoreModel, UserModel
-from domain.store.value_objects import Role
+from database.models import StoreModel, UserModel, UserRole
 
 def seed_default_store_and_users(db: Session):
     """Seed cửa hàng mặc định và các tài khoản mẫu khi migrate."""
@@ -18,18 +17,22 @@ def seed_default_store_and_users(db: Session):
         db.commit()
         
     if db.query(UserModel).filter(UserModel.username == "admin").count() == 0:
-        hq_admin = UserModel(username="admin", password_hash="secret", role=Role.SUPER_ADMIN.value, store_id=None)
+        hq_admin = UserModel(username="admin", password_hash="secret", role=UserRole.SUPER_ADMIN.value, store_id=None)
         db.add(hq_admin)
         db.commit()
     if db.query(UserModel).filter(UserModel.username == "manager1").count() == 0:
-        store_mgr = UserModel(username="manager1", password_hash="secret", role=Role.STORE_MANAGER.value, store_id=1)
+        store_mgr = UserModel(username="manager1", password_hash="secret", role=UserRole.ADMIN.value, store_id=1)
         db.add(store_mgr)
         db.commit()
+    if db.query(UserModel).filter(UserModel.username == "staff1").count() == 0:
+        store_staff = UserModel(username="staff1", password_hash="secret", role=UserRole.MANAGER.value, store_id=1)
+        db.add(store_staff)
+        db.commit()
     if db.query(UserModel).filter(UserModel.username == "manager2").count() == 0:
-        store_mgr2 = UserModel(username="manager2", password_hash="secret", role=Role.STORE_MANAGER.value, store_id=2)
+        store_mgr2 = UserModel(username="manager2", password_hash="secret", role=UserRole.ADMIN.value, store_id=2)
         db.add(store_mgr2)
         db.commit()
     if db.query(UserModel).filter(UserModel.username == "manager3").count() == 0:
-        store_mgr3 = UserModel(username="manager3", password_hash="secret", role=Role.STORE_MANAGER.value, store_id=3)
+        store_mgr3 = UserModel(username="manager3", password_hash="secret", role=UserRole.ADMIN.value, store_id=3)
         db.add(store_mgr3)
         db.commit()

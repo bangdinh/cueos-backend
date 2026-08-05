@@ -12,7 +12,7 @@ from api.websocket_server import websocket_manager
 from database.database import init_db, SessionLocal
 from database.crud import seed_initial_tables, seed_initial_products
 from database.seed import seed_default_store_and_users
-from database.models import BilliardTable, PlaySession, SessionOrderItem, Product
+from database.models import BilliardTable, PlaySession, SessionOrderItem, Product, CustomerModel, UserRole
 
 # Import HTML Templates
 from templates.admin_template import admin_html
@@ -154,7 +154,7 @@ async def websocket_endpoint(websocket: WebSocket, token: Optional[str] = None):
     try:
         payload = verify_token(jwt_str)
         role_str = str(payload.get("role", "STORE_MANAGER")).upper()
-        is_hq = (role_str == "SUPER_ADMIN")
+        is_hq = (role_str == UserRole.SUPER_ADMIN.value)
         token_store_id = payload.get("store_id")
         sid = payload.get("sid")
         if not is_hq and token_store_id is None:

@@ -1,11 +1,14 @@
 from sqlalchemy.orm import Session
 from database.models import Product
 
-class InventoryService:
+class ProductService:
     @staticmethod
     def decrease_stock(db: Session, product_id: int, quantity: int) -> bool:
         """
         Trừ số lượng tồn kho của một sản phẩm.
+        
+        [CACHE INVALIDATION]: Nhớ gọi hàm xóa cache danh sách sản phẩm (ví dụ: product_service.invalidate_store_menu(store_id)) 
+        sau khi update thành công để đảm bảo menu được cập nhật mới nhất.
         """
         product = db.query(Product).filter(Product.id == product_id).first()
         if product:
@@ -20,6 +23,9 @@ class InventoryService:
     def decrease_stock_by_name(db: Session, product_name: str, quantity: int) -> Product:
         """
         Trừ tồn kho bằng tên sản phẩm.
+        
+        [CACHE INVALIDATION]: Nhớ gọi hàm xóa cache danh sách sản phẩm 
+        nếu hệ thống đang áp dụng cơ chế caching cho menu thực đơn.
         """
         product = db.query(Product).filter(Product.name == product_name).first()
         if product:
@@ -33,6 +39,8 @@ class InventoryService:
     def increase_stock(db: Session, product_id: int, quantity: int):
         """
         Cộng số lượng tồn kho.
+        
+        [CACHE INVALIDATION]: Nhớ gọi hàm xóa cache nếu có sử dụng bộ nhớ đệm cho danh sách sản phẩm.
         """
         product = db.query(Product).filter(Product.id == product_id).first()
         if product:
