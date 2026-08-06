@@ -31,8 +31,17 @@ async def gateway(request: Request, path: str):
     parts = path.strip("/").split("/")
     if len(parts) >= 2 and parts[0] == "api":
         service_name = parts[1]
-        if service_name in SERVICES:
+        target_url = None
+        
+        # Specific routing for order service (port 8005)
+        if service_name == "session" and len(parts) > 2 and parts[2] in ("add-item", "add-items", "item"):
+            target_url = f"http://127.0.0.1:8005/{path}"
+        elif service_name == "customer-order":
+            target_url = f"http://127.0.0.1:8005/{path}"
+        elif service_name in SERVICES:
             target_url = f"{SERVICES[service_name]}/{path}"
+            
+        if target_url:
             if request.url.query:
                 target_url += f"?{request.url.query}"
             

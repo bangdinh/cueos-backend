@@ -81,7 +81,7 @@ def start_redis_listener_thread(loop):
                     "table_id": table_id,
                     "store_id": store_id,
                     "event_type": event_type,
-                    "message": "",
+                    "message": data.get("message", ""),
                     "image": image_base64,
                     "date": date_str,
                     "play_time": play_time_str,
