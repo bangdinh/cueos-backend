@@ -80,6 +80,22 @@ def init_db():
     try:
         from sqlalchemy import text
         with engine.begin() as conn:
-            conn.execute(text("ALTER TABLE products ADD COLUMN image_url VARCHAR(255) DEFAULT ''"))
+            alter_stmts = [
+                "ALTER TABLE products ADD COLUMN image_url VARCHAR(255) DEFAULT ''",
+                "ALTER TABLE products ADD COLUMN store_id INT NOT NULL DEFAULT 1",
+                "ALTER TABLE billiard_tables ADD COLUMN store_id INT NOT NULL DEFAULT 1",
+                "ALTER TABLE play_sessions ADD COLUMN store_id INT NOT NULL DEFAULT 1",
+                "ALTER TABLE play_sessions ADD COLUMN is_synced_to_hq BOOLEAN DEFAULT 0",
+                "ALTER TABLE play_sessions ADD COLUMN services_fee FLOAT DEFAULT 0.0",
+                "ALTER TABLE play_sessions ADD COLUMN total_amount FLOAT DEFAULT 0.0",
+                "ALTER TABLE session_order_items ADD COLUMN store_id INT NOT NULL DEFAULT 1",
+                "ALTER TABLE ai_events ADD COLUMN store_id INT NOT NULL DEFAULT 1",
+                "ALTER TABLE staff_notifications ADD COLUMN store_id INT NOT NULL DEFAULT 1"
+            ]
+            for stmt in alter_stmts:
+                try:
+                    conn.execute(text(stmt))
+                except Exception:
+                    pass
     except Exception:
         pass

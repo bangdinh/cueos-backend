@@ -15,11 +15,11 @@ def start_redis_listener_thread(loop):
             # Sử dụng Redis đồng bộ
             redis_client = redis.Redis(host='127.0.0.1', port=6379, db=0)
             pubsub = redis_client.pubsub()
-            pubsub.subscribe('bida_ai_events')
+            pubsub.psubscribe('bida_ai_events*')
             print("[API] [OK] Da khoi dong luong lang nghe Redis (Thread rieng)")
 
             for message in pubsub.listen():
-                if message['type'] != 'message':
+                if message['type'] not in ('message', 'pmessage'):
                     continue
                 try:
                     data = json.loads(message['data'])
@@ -31,6 +31,7 @@ def start_redis_listener_thread(loop):
                 event_type = data.get("event_type")
                 confidence = data.get("confidence", 1.0)
                 image_base64 = data.get("image", None)
+                store_id = data.get("store_id", 1)
                 
                 db = SessionLocal()
                 play_time_str = "Chưa bắt đầu"
@@ -42,6 +43,9 @@ def start_redis_listener_thread(loop):
                     
                     # Lấy thông tin phiên chơi để tính tiền và thời gian
                     table = db.query(BilliardTable).filter(BilliardTable.id == table_id).first()
+                    if table and table.store_id:
+                        store_id = table.store_id
+                        
                     session = db.query(PlaySession).filter(PlaySession.table_id == table_id).order_by(PlaySession.id.desc()).first()
                     
                     if session:
@@ -75,8 +79,9 @@ def start_redis_listener_thread(loop):
                 ws_payload = {
                     "id": f"evt_{time.time()}",
                     "table_id": table_id,
+                    "store_id": store_id,
                     "event_type": event_type,
-                    "message": "",
+                    "message": data.get("message", ""),
                     "image": image_base64,
                     "date": date_str,
                     "play_time": play_time_str,
@@ -98,7 +103,7 @@ def start_redis_listener_thread(loop):
                 
                 # Push via websocket
                 asyncio.run_coroutine_threadsafe(
-                    websocket_manager.broadcast(payload_str), 
+                    websocket_manager.broadcast(payload_str, store_id=store_id), 
                     loop
                 )
 

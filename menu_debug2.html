@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bida Club - Bàn 4</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Outfit', sans-serif; }
+        body { background: #0d0a21; color: #f3f4f6; padding: 16px; min-height: 100vh; display: flex; flex-direction: column; }
+        header { text-align: center; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px dashed rgba(255,255,255,0.15); }
+        .title { font-size: 22px; font-weight: 800; color: #fbbf24; }
+        .subtitle { font-size: 13px; color: #9ca3af; margin-top: 4px; }
+        
+        .menu-list { display: flex; flex-direction: column; gap: 12px; }
+        .menu-item { background: #1e1b4b; border: 1px solid rgba(255,255,255,0.06); padding: 14px; border-radius: 14px; display: flex; justify-content: space-between; align-items: center; transition: border-color 0.2s; }
+        .item-info { display: flex; flex-direction: column; gap: 4px; }
+        .item-name { font-size: 16px; font-weight: 600; color: white; }
+        .item-price { font-size: 14px; color: #86efac; font-weight: 600; }
+        
+        .qty-container { display: flex; align-items: center; gap: 14px; }
+        .btn-qty { width: 32px; height: 32px; border-radius: 10px; border: none; background: rgba(255,255,255,0.08); color: white; font-size: 18px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
+        .btn-qty:active { background: rgba(255,255,255,0.2); }
+        .btn-qty:disabled { opacity: 0.3; cursor: not-allowed; }
+        .qty-val { font-size: 16px; font-weight: bold; width: 40px; text-align: center; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 6px; padding: 4px 0; outline: none; }
+        .qty-val::-webkit-inner-spin-button, .qty-val::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        
+        .sticky-footer { position: fixed; bottom: 0; left: 0; width: 100%; padding: 16px; background: rgba(13,10,33,0.9); backdrop-filter: blur(12px); border-top: 1px solid rgba(255,255,255,0.08); z-index: 100; }
+        .btn-submit { width: 100%; height: 50px; border-radius: 14px; border: none; background: linear-gradient(135deg, #22c55e, #16a34a); color: white; font-size: 16px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 15px rgba(34,197,94,0.3); display: flex; align-items: center; justify-content: center; gap: 8px; transition: transform 0.2s; }
+        .btn-submit:active { transform: scale(0.98); }
+        .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; background: #374151; }
+
+        .success-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(13,10,33,0.95); display: none; align-items: center; justify-content: center; flex-direction: column; gap: 16px; padding: 24px; text-align: center; z-index: 200; }
+        .success-icon { font-size: 64px; color: #22c55e; animation: pop 0.4s ease; }
+        @keyframes pop { 0% { transform: scale(0.5); } 100% { transform: scale(1); } }
+        
+        /* Banner Styles */
+        .top-content { display: grid; grid-template-columns: 1fr; gap: 24px; max-width: 1000px; margin: 0 auto 20px auto; align-items: stretch; }
+        .info-section { width: 100%; max-width: 500px; margin: 0 auto; }
+        .promo-image { display: none; width: 100%; border-radius: 24px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .promo-image img { width: 100%; height: 100%; object-fit: cover; display: block; filter: brightness(0.85); }
+        
+        @media (min-width: 850px) {
+            .top-content { grid-template-columns: 1fr 1fr; }
+            .promo-image { display: block; }
+        }
+        
+        .pill-banner { display: flex; align-items: center; border-radius: 99px; margin-bottom: 8px; padding: 6px 16px 6px 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); background-color: #1e1b4b; border: 2px solid white; position: relative; overflow: hidden; }
+        
+        .pill-blue { background: linear-gradient(90deg, #1e3a8a 0%, #3b82f6 100%); }
+        .pill-black { background: linear-gradient(90deg, #111827 0%, #374151 100%); }
+        .pill-green { background: linear-gradient(90deg, #15803d 0%, #22c55e 100%); }
+        
+        .pill-icon { width: 44px; height: 44px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; margin-right: 12px; flex-shrink: 0; box-shadow: 0 2px 5px rgba(0,0,0,0.2); border: 2px solid rgba(255,255,255,0.4); text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+        .pill-content { display: flex; flex-direction: column; justify-content: center; flex: 1; }
+        .pill-title { font-weight: 800; font-size: 14px; color: white; text-transform: uppercase; line-height: 1.2; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
+        .pill-desc { font-size: 10.5px; color: rgba(255,255,255,0.95); font-weight: 500; line-height: 1.25; margin-top: 2px; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="title">🎱 Bida Club - Bàn 4</div>
+        <div class="subtitle">Đẳng cấp từng cú cơ</div>
+        <div style="font-size: 11px; color: #9ca3af; margin-top: 4px;">📍 3xx Huỳnh Tấn Phát quận 7 HCM &nbsp;|&nbsp; 📞 0396123456</div>
+        <div class="subtitle" id="play-time-display" style="color: #fbbf24; font-weight: 600; margin-top: 6px;">
+            🕒 Đã chơi: <span id="play-duration">--</span> (Từ <span id="play-start-time">--</span>)
+        </div>
+    </header>
+    <div class="top-content">
+        <div class="info-section">
+            <div class="pill-banner pill-blue">
+            <div class="pill-icon">🛡️</div>
+            <div class="pill-content">
+                <div class="pill-title">Miễn phí: Trà đá, khăn lạnh</div>
+                <div class="pill-desc">Giữ xe, máy lạnh</div>
+            </div>
+        </div>
+        
+        <div class="pill-banner pill-black">
+            <div class="pill-icon">🎱</div>
+            <div class="pill-content">
+                <div class="pill-title">Mượn miễn phí</div>
+                <div class="pill-desc">Cơ mộc, cơ carbon, găng tay</div>
+            </div>
+        </div>
+        
+        <div class="pill-banner pill-green">
+            <div class="pill-icon">🧋</div>
+            <div class="pill-content">
+                <div class="pill-title">Mang đồ ăn thức uống ngoài</div>
+                <div class="pill-desc">Phụ thu 5k với món chính hoặc bày bừa</div>
+            </div>
+        </div>
+        
+        <div class="pill-banner pill-blue">
+            <div class="pill-icon">⏱️</div>
+            <div class="pill-content">
+                <div class="pill-title">Không phí ẩn</div>
+                <div class="pill-desc">Không phí ẩn, giá tốt cố định</div>
+            </div>
+        </div>
+        
+        <div class="pill-banner pill-black">
+            <div class="pill-icon">🤝</div>
+            <div class="pill-content">
+                <div class="pill-title">Hỗ trợ xếp bi</div>
+                <div class="pill-desc">Nếu bàn đông, NV hỗ trợ không kịp, quý khách hoan hỉ nhé ^^</div>
+            </div>
+        </div>
+        
+        <div class="pill-banner pill-green">
+            <div class="pill-icon">🏪</div>
+            <div class="pill-content">
+                <div class="pill-title">24/24, 20+ chi nhánh</div>
+                <div class="pill-desc">Mở xuyên lễ. Sau 22h hoặc trước 6h xin gọi NV mở cửa</div>
+            </div>
+        </div>
+        
+        <div class="pill-banner pill-green">
+            <div class="pill-icon">💲</div>
+            <div class="pill-content">
+                <div class="pill-title">Bảng giá giờ chơi</div>
+                <div class="pill-desc">Pool/Libre: 29k-39k/h &nbsp;|&nbsp; 3C: 39k-49k/h</div>
+            </div>
+        </div>
+        </div>
+        <div class="promo-image">
+            <img src="/assets/promo.png" alt="Bida Club" />
+        </div>
+    </div>
+
+    <div id="order-history-section" style="display: none; margin-bottom: 20px; background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.3); border-radius: 12px; padding: 14px;">
+        <div style="font-size: 14px; font-weight: 700; color: #a5b4fc; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+            📜 Các món đã đặt trước đó:
+        </div>
+        <div id="order-history-list" style="font-size: 14px; color: #e5e7eb; display: flex; flex-direction: column; gap: 6px;">
+        </div>
+    </div>
+
+    <div class="category-tabs" id="category-tabs" style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 16px; margin-top: 4px; scrollbar-width: none;">
+        <!-- Rendered by JS -->
+    </div>
+    <style>
+        .category-tabs::-webkit-scrollbar { display: none; }
+        .cat-btn { flex-shrink: 0; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: #9ca3af; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+        .cat-btn.active { background: #6366f1; color: white; border-color: #6366f1; }
+    </style>
+
+    <div class="menu-list" id="menu-items-container">
+        <!-- Load items here dynamically via Javascript -->
+    </div>
+    
+    <div style="margin-top: 24px; padding: 14px; background: #1e1b4b; border-radius: 14px; border: 1px solid rgba(255,255,255,0.06); margin-bottom: 24px;">
+        <div style="font-size: 14px; font-weight: 600; color: #86efac; margin-bottom: 8px;">📞 Số điện thoại nhận đồ (Bắt buộc):</div>
+        <input type="tel" id="order-phone" placeholder="Nhập SĐT Việt Nam (ví dụ: 0912345678)" style="width: 100%; height: 44px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; padding: 0 12px; font-size: 14px; outline: none;">
+    </div>
+    
+    <div style="margin-top: 0px; padding: 14px; background: #1e1b4b; border-radius: 14px; border: 1px solid rgba(255,255,255,0.06); margin-bottom: 100px;">
+        <div style="font-size: 14px; font-weight: 600; color: #a5b4fc; margin-bottom: 8px;">📝 Ghi chú yêu cầu thêm:</div>
+        <textarea id="order-note" placeholder="Ví dụ: Sting ít đá, Mực nướng chín kỹ..." style="width: 100%; height: 60px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; padding: 8px; font-size: 13px; resize: none; outline: none;"></textarea>
+    </div>
+
+    <div class="sticky-footer">
+        <button class="btn-submit" id="submit-order-btn" onclick="submitOrder()" disabled>
+            🛒 Gửi yêu cầu gọi món (Tổng: <span id="total-amount">0 VNĐ</span>)
+        </button>
+    </div>
+
+    <div class="success-overlay" id="success-overlay">
+        <div class="success-icon">✔️</div>
+        <h2 style="font-weight: 800; color: #fbbf24; font-size: 22px;">Gửi yêu cầu thành công!</h2>
+        <p style="color: #9ca3af; font-size: 14px; margin-top: 8px;">Nhân viên đã nhận được order và đang chuẩn bị đồ dùng phục vụ bạn.</p>
+        <button class="btn-submit" style="margin-top: 24px; max-width: 200px; background: rgba(255,255,255,0.08); box-shadow: none;" onclick="resetMenu()">Tiếp tục gọi món</button>
+    </div>
+
+    <script>
+        var tableId = 4;
+        var inventoryStock = {"Sting d\u00e2u": 75, "Coca Cola": 9, "B\u00f2 h\u00fac": 7, "Kh\u00f4 m\u1ef1c n\u01b0\u1edbng": 3, "\u0110\u1eadu ph\u1ed9ng rang": 0, "Thu\u1ed1c l\u00e1 M\u00e8o": 9, "Kh\u0103n l\u1ea1nh": 48, "Sting vang": 12};
+        
+        var activeStartTime = "2026-07-17T07:54:38Z";
+        if (activeStartTime && activeStartTime !== "None") {
+            var startTime = new Date(activeStartTime);
+            var minText = startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            document.getElementById("play-start-time").textContent = minText;
+            
+            function updatePlayTime() {
+                var diffMs = new Date() - startTime;
+                var diffMins = Math.max(0, Math.floor(diffMs / 60000));
+                var diffHours = Math.floor(diffMins / 60);
+                var minsLeft = diffMins % 60;
+                var text = diffHours > 0 ? diffHours + "h " + minsLeft + "m" : diffMins + "m";
+                document.getElementById("play-duration").textContent = text;
+            }
+            updatePlayTime();
+            setInterval(updatePlayTime, 30000);
+        } else {
+            document.getElementById("play-time-display").innerHTML = "⚠️ Bàn chưa kích hoạt chơi!";
+            document.getElementById("play-time-display").style.color = "#ef4444";
+        }
+
+        // Load SDT tu localStorage neu co
+        var savedPhone = localStorage.getItem("customer_phone");
+        if (savedPhone) {
+            document.getElementById("order-phone").value = savedPhone;
+        }
+
+        var menuItems = [{"name": "Sting d\u00e2u", "price": 15000.0, "category": "Th\u1ee9c u\u1ed1ng", "image_url": "https://egrocery.asia/wp-content/uploads/2017/10/red-sting-energy-drink-can-600x600.jpg", "stock": 75}, {"name": "Coca Cola", "price": 15000.0, "category": "Th\u1ee9c u\u1ed1ng", "image_url": "https://i.imgur.com/hOObf8A.png", "stock": 9}, {"name": "B\u00f2 h\u00fac", "price": 20000.0, "category": "Th\u1ee9c u\u1ed1ng", "image_url": "", "stock": 7}, {"name": "Kh\u00f4 m\u1ef1c n\u01b0\u1edbng", "price": 50000.0, "category": "\u0110\u1ed3 \u0103n", "image_url": "", "stock": 3}, {"name": "\u0110\u1eadu ph\u1ed9ng rang", "price": 15000.0, "category": "\u0110\u1ed3 \u0103n", "image_url": "", "stock": 0}, {"name": "Thu\u1ed1c l\u00e1 M\u00e8o", "price": 20000.0, "category": "Thu\u1ed1c l\u00e1", "image_url": "", "stock": 9}, {"name": "Kh\u0103n l\u1ea1nh", "price": 5000.0, "category": "D\u1ecbch v\u1ee5 kh\u00e1c", "image_url": "", "stock": 48}, {"name": "Sting vang", "price": 16000.0, "category": "Th\u1ee9c u\u1ed1ng", "image_url": "", "stock": 12}, {"name": "L\u1ea5y l\u01a1", "price": 0, "category": "Y\u00eau c\u1ea7u nghi\u1ec7p v\u1ee5"}, {"name": "X\u1ebfp bi", "price": 0, "category": "Y\u00eau c\u1ea7u nghi\u1ec7p v\u1ee5"}, {"name": "Qu\u00e9t b\u00e0n", "price": 0, "category": "Y\u00eau c\u1ea7u nghi\u1ec7p v\u1ee5"}, {"name": "Y\u00eau c\u1ea7u kh\u00e1c", "price": 0, "category": "Y\u00eau c\u1ea7u nghi\u1ec7p v\u1ee5"}];
+        var orderQty = {};
+        window.otherReqText = "";
+        window.saveOtherReq = function(val) { 
+            window.otherReqText = val; 
+            updateTotal(); 
+        };
+
+        var categories = ["Thức uống", "Đồ ăn", "Thuốc lá", "Yêu cầu nghiệp vụ", "Dịch vụ khác"];
+        var activeCategory = "all";
+
+        function renderCategories() {
+            var tabsContainer = document.getElementById("category-tabs");
+            if (!tabsContainer) return;
+            tabsContainer.innerHTML = "";
+            
+            var allBtn = document.createElement("button");
+            allBtn.className = "cat-btn " + (activeCategory === "all" ? "active" : "");
+            allBtn.onclick = function() { filterCategory("all"); };
+            allBtn.textContent = "Tất cả";
+            tabsContainer.appendChild(allBtn);
+            
+            categories.forEach(function(cat) {
+                var icon = "🍹 ";
+                if (cat === "Đồ ăn") icon = "🍔 ";
+                else if (cat === "Thuốc lá") icon = "🚬 ";
+                else if (cat === "Dịch vụ khác") icon = "❄️ ";
+                else if (cat === "Yêu cầu nghiệp vụ") icon = "🛎️ ";
+                
+                var btn = document.createElement("button");
+                btn.className = "cat-btn " + (activeCategory === cat ? "active" : "");
+                btn.onclick = function() { filterCategory(cat); };
+                btn.textContent = icon + cat;
+                tabsContainer.appendChild(btn);
+            });
+        }
+
+        function filterCategory(cat) {
+            activeCategory = cat;
+            renderCategories();
+            renderMenu();
+        }
+
+        function renderMenu() {
+            var container = document.getElementById("menu-items-container");
+            container.innerHTML = "";
+            
+            categories.forEach(function(cat) {
+                if (activeCategory !== "all" && activeCategory.trim().normalize("NFC") !== cat.trim().normalize("NFC")) return;
+                var catItems = menuItems.filter(function(item) { return (item.category || "").trim().normalize("NFC") === cat.trim().normalize("NFC"); });
+                if (catItems.length === 0) return;
+                
+                var catHeader = document.createElement("div");
+                catHeader.style.cssText = "font-size: 15px; font-weight: 800; color: #a5b4fc; text-transform: uppercase; margin-top: 18px; margin-bottom: 8px; letter-spacing: 0.5px; border-left: 3px solid #6366f1; padding-left: 8px;";
+                var icon = "🍹 Thức uống";
+                if (cat === "Đồ ăn") icon = "🍔 Đồ ăn";
+                else if (cat === "Thuốc lá") icon = "🚬 Thuốc lá";
+                else if (cat === "Dịch vụ khác") icon = "❄️ Dịch vụ khác";
+                else if (cat === "Yêu cầu nghiệp vụ") icon = "🛎️ Yêu cầu nghiệp vụ";
+                catHeader.textContent = icon;
+                container.appendChild(catHeader);
+                
+                catItems.forEach(function(item, idx) {
+                    try {
+                        orderQty[item.name] = orderQty[item.name] || 0;
+                        var currentStock = inventoryStock[item.name] || 0;
+                        
+                        var card = document.createElement("div");
+                        card.className = "menu-item";
+                        
+                        var info = document.createElement("div");
+                        info.className = "item-info";
+                        
+                        if (item.category === "Yêu cầu nghiệp vụ") {
+                            info.innerHTML = "<span class='item-name' style='font-size: 15px;'>" + item.name + "</span>";
+                            if (item.name === "Yêu cầu khác") {
+                                info.innerHTML += "<input type='text' maxlength='250' placeholder='Nhập nội dung yêu cầu (tối đa 250 ký tự)...' style='margin-top: 8px; padding: 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.3); color: white; width: 100%; font-size: 14px;' value='" + window.otherReqText.replace(/'/g, "&#39;") + "' onchange='window.saveOtherReq(this.value)' onkeyup='window.saveOtherReq(this.value)'>";
+                            }
+                            var qtyDiv = document.createElement("div");
+                            qtyDiv.className = "qty-container";
+                            var isSelected = orderQty[item.name] > 0;
+                            var toggleBtn = document.createElement("button");
+                            toggleBtn.className = "btn-submit";
+                            toggleBtn.style.cssText = isSelected ? "width: auto; padding: 6px 14px; height: 34px; font-size: 13px; background: #fbbf24; color: #000; box-shadow: none;" : "width: auto; padding: 6px 14px; height: 34px; font-size: 13px; background: transparent; border: 1px solid rgba(255,255,255,0.3); box-shadow: none; color: white;";
+                            toggleBtn.textContent = isSelected ? "Đã chọn ✓" : "Chọn";
+                            toggleBtn.onclick = function() {
+                                orderQty[item.name] = isSelected ? 0 : 1;
+                                renderMenu();
+                            };
+                            qtyDiv.appendChild(toggleBtn);
+                        } else {
+                            var stockVal = item.stock !== undefined ? item.stock : currentStock;
+                            var stockLabel = stockVal > 0 ? (" (Còn: " + stockVal + ")") : " (Hết hàng)";
+                            var stockColor = stockVal > 0 ? "#9ca3af" : "#ef4444";
+                            
+                            var imgHtml = item.image_url ? "<img src='" + item.image_url + "' onerror=\"this.style.display='none'\" style='width: 48px; height: 48px; object-fit: cover; border-radius: 8px; margin-right: 12px; border: 1px solid rgba(255,255,255,0.1);'>" : "";
+                            
+                            info.style.display = "flex";
+                            info.style.flexDirection = "row";
+                            info.style.alignItems = "center";
+                            
+                            info.innerHTML = imgHtml + "<div style='display: flex; flex-direction: column; justify-content: center;'><span class='item-name'>" + item.name + "</span>" +
+                                             "<span class='item-price'>" + item.price.toLocaleString("vi-VN") + " đ <span style='font-size:12px; color:" + stockColor + "; font-weight:normal;'>" + stockLabel + "</span></span></div>";
+                            
+                            var qtyDiv = document.createElement("div");
+                            qtyDiv.className = "qty-container";
+                            
+                            var isMinusDisabled = (orderQty[item.name] === 0);
+                            var isPlusDisabled = (orderQty[item.name] >= currentStock);
+                            
+                            var minusBtn = document.createElement("button");
+                            minusBtn.className = "btn-qty";
+                            minusBtn.textContent = "-";
+                            minusBtn.disabled = isMinusDisabled;
+                            minusBtn.style.opacity = isMinusDisabled ? "0.3" : "1";
+                            minusBtn.addEventListener("click", function() { adjustQty(item.name, -1); });
+                            
+                            var qtySpan = document.createElement("input");
+                            qtySpan.type = "number";
+                            qtySpan.className = "qty-val";
+                            qtySpan.value = orderQty[item.name];
+                            qtySpan.min = 0;
+                            qtySpan.max = currentStock;
+                            
+                            qtySpan.addEventListener("change", function(e) {
+                                var val = parseInt(e.target.value) || 0;
+                                if (val > currentStock) {
+                                    alert("Rất tiếc! Số lượng bạn nhập (" + val + ") vượt quá tồn kho (chỉ còn " + currentStock + "). Vui lòng nhập lại!");
+                                    val = 0;
+                                } else if (val < 0) {
+                                    val = 0;
+                                }
+                                orderQty[item.name] = val;
+                                renderMenu();
+                            });
+                            
+                            var plusBtn = document.createElement("button");
+                            plusBtn.className = "btn-qty";
+                            plusBtn.textContent = "+";
+                            plusBtn.disabled = isPlusDisabled;
+                            plusBtn.style.opacity = isPlusDisabled ? "0.3" : "1";
+                            plusBtn.addEventListener("click", function() { adjustQty(item.name, 1); });
+                            
+                            qtyDiv.appendChild(minusBtn);
+                            qtyDiv.appendChild(qtySpan);
+                            qtyDiv.appendChild(plusBtn);
+                        }
+                        
+                        card.appendChild(info);
+                        card.appendChild(qtyDiv);
+                        container.appendChild(card);
+                    } catch (err) {
+                        console.error("Error rendering item: " + item.name, err);
+                    }
+                });
+            });
+            updateTotal();
+        }
+
+        function adjustQty(name, val) {
+            var currentStock = inventoryStock[name] || 0;
+            var target = (orderQty[name] || 0) + val;
+            orderQty[name] = Math.max(0, Math.min(currentStock, target));
+            renderMenu();
+        }
+
+        function updateTotal() {
+            var totalQty = 0;
+            var totalMoney = 0;
+            for (var name in orderQty) {
+                var qty = orderQty[name];
+                if (qty > 0) {
+                    totalQty += qty;
+                    var item = menuItems.find(function(it) { return it.name === name; });
+                    if (item) {
+                        totalMoney += qty * item.price;
+                    }
+                }
+            }
+            if (window.otherReqText && window.otherReqText.trim() !== "") {
+                totalQty += 1;
+            }
+            document.getElementById("total-amount").textContent = totalMoney.toLocaleString("vi-VN") + " VNĐ";
+            document.getElementById("submit-order-btn").disabled = (totalQty === 0);
+        }
+
+        function submitOrder() {
+            var phone = document.getElementById("order-phone").value.trim();
+            var phoneRegex = /^(0|\+84|84)(3|5|7|8|9)[0-9]{8}$/;
+            if (!phone || !phoneRegex.test(phone)) {
+                alert("Vui lòng nhập số điện thoại di động Việt Nam hợp lệ (ví dụ: 0912345678, 84912345678 hoặc +84912345678) để đặt món!");
+                document.getElementById("order-phone").focus();
+                return;
+            }
+
+            var itemsList = [];
+            menuItems.forEach(function(item) {
+                var qty = orderQty[item.name] || 0;
+                var isOtherReq = (item.name === "Yêu cầu khác" && window.otherReqText.trim() !== "");
+                
+                if (qty > 0 || isOtherReq) {
+                    var finalName = item.name;
+                    if (isOtherReq) {
+                        finalName = "Yêu cầu khác: " + window.otherReqText.trim();
+                        qty = 1;
+                    }
+                    itemsList.push({
+                        item_name: finalName,
+                        quantity: qty,
+                        price: item.price
+                    });
+                }
+            });
+
+            var note = document.getElementById("order-note").value;
+            var btn = document.getElementById("submit-order-btn");
+            btn.disabled = true;
+            btn.textContent = "Đang gửi...";
+
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", "/api/customer-order/" + tableId, true);
+            xhr.setRequestHeader("Content-Type", "application/json");
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    localStorage.setItem("customer_phone", phone);
+                    document.getElementById("success-overlay").style.display = "flex";
+                    try {
+                        var actx = new (window.AudioContext || window.webkitAudioContext)();
+                        var o = actx.createOscillator();
+                        var g = actx.createGain();
+                        o.connect(g); g.connect(actx.destination);
+                        o.type = "sine"; o.frequency.value = 1046.50;
+                        g.gain.setValueAtTime(0.2, actx.currentTime);
+                        g.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + 0.4);
+                        o.start(actx.currentTime); o.stop(actx.currentTime + 0.4);
+                    } catch(e) {}
+                } else {
+                    var err = JSON.parse(xhr.responseText);
+                    alert("Lỗi: " + err.message);
+                    btn.disabled = false;
+                    btn.textContent = "🛒 Gửi yêu cầu gọi món";
+                }
+            };
+            xhr.send(JSON.stringify({ items: itemsList, note: note, phone: phone }));
+        }
+
+        function resetMenu() {
+            var btn = document.getElementById("submit-order-btn");
+            btn.disabled = true;
+            btn.textContent = "🛒 Gửi yêu cầu gọi món";
+            window.location.reload();
+        }
+
+        renderCategories();
+        renderMenu();
+
+        var orderHistory = [];
+        var historySection = document.getElementById("order-history-section");
+        if (orderHistory && orderHistory.length > 0) {
+            historySection.style.display = "block";
+            var hHtml = "";
+            orderHistory.forEach(function(h) {
+                hHtml += "<div style='display: flex; justify-content: space-between;'><span style='font-weight: 600;'><span style='color: #fbbf24;'>" + h.qty + "x</span> " + h.name + "</span><b style='color: white; font-variant-numeric: tabular-nums;'>" + h.total.toLocaleString("vi-VN") + " đ</b></div>";
+            });
+            document.getElementById("order-history-list").innerHTML = hHtml;
+        }
+    </script>
+</body>
+</html>
