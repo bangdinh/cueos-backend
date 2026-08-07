@@ -19,9 +19,9 @@ from templates.admin_template import admin_html
 from templates.customer_template import customer_menu_html
 
 # Import Modular API Routers
-from api.routes import products, tables, sessions, reports
+from api.routes import products, tables, client_realtime, reports
 from api import auth
-from api.routes.sessions import generate_table_token
+from api.routes.client_realtime import generate_table_token
 
 CLIPS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "clips")
 ARCHIVE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "archive")
@@ -54,7 +54,7 @@ app.mount("/assets", StaticFiles(directory="assets"), name="assets")
 # Include Modular Routers
 app.include_router(products.router)
 app.include_router(tables.router)
-app.include_router(sessions.router)
+app.include_router(client_realtime.router)
 app.include_router(reports.router)
 app.include_router(auth.router)
 

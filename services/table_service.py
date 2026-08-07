@@ -56,7 +56,7 @@ class TableService:
         
         db.commit()
 
-        from api.routes.sessions import generate_table_token
+        from api.routes.client_realtime import generate_table_token
         to_token = generate_table_token(to_table_id)
         new_url = f"/menu/{to_table_id}/{to_token}"
         
