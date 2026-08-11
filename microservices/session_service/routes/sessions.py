@@ -1,13 +1,15 @@
+import os
 import json
 import time
 import math
+import httpx
 from datetime import datetime
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 import redis as redis_lib
 
 from ..database import SessionLocal
-from ..models.session import PlaySession, SessionOrderItem
+from ..models.session import PlaySession
 from ..models.billiard_table import BilliardTable
 
 # Token generator helper
@@ -18,7 +20,7 @@ def generate_table_token(table_id: int) -> str:
 
 def broadcast_to_websocket(event_data: dict, store_id: int):
     try:
-        r = redis_lib.Redis(host='127.0.0.1', port=6379, db=0, socket_timeout=0.2, socket_connect_timeout=0.2)
+        r = redis_lib.Redis(host=os.environ.get('REDIS_HOST', '127.0.0.1'), port=6379, db=0, socket_timeout=0.2, socket_connect_timeout=0.2)
         event_data['store_id'] = store_id
         r.publish('ws_broadcast_events', json.dumps(event_data))
     except Exception as e:
@@ -37,6 +39,21 @@ def get_store_context():
     return StoreContext(store_id=1, role="STORE_MANAGER")
 
 router = APIRouter(prefix="/api", tags=["Sessions"])
+
+@router.get("/session/active/{table_id}")
+def get_active_session(table_id: int):
+    db = SessionLocal()
+    try:
+        table = db.query(BilliardTable).filter(BilliardTable.id == table_id).first()
+        if not table or table.current_status != "PLAYING":
+            return JSONResponse({"status": "error"}, status_code=404)
+            
+        session = db.query(PlaySession).filter(PlaySession.table_id == table_id, PlaySession.status == "ACTIVE").first()
+        if session:
+            return {"id": session.id, "store_id": session.store_id}
+        return JSONResponse({"status": "error"}, status_code=404)
+    finally:
+        db.close()
 
 @router.post("/session/start/{table_id}")
 def start_session(table_id: int, ctx: StoreContext = Depends(get_store_context)):
@@ -87,8 +104,21 @@ def stop_session(table_id: int, ctx: StoreContext = Depends(get_store_context)):
         
         play_fee = math.ceil((total_minutes / 60.0) * table.price_per_hour)
         
-        items = db.query(SessionOrderItem).filter(SessionOrderItem.session_id == active_session.id).all()
-        service_total = sum(i.total_price for i in items)
+        
+        # Call Order Service to get items
+        service_total = 0
+        items_data = []
+        try:
+            # Synchronous call for simplicity, but better use async httpx
+            with httpx.Client() as client:
+                resp = client.get(f"{os.environ.get('ORDER_SERVICE_URL', 'http://127.0.0.1:8005')}/api/orders/{active_session.id}")
+                if resp.status_code == 200:
+                    data = resp.json()
+                    items_data = data.get("items", [])
+                    service_total = sum(i["total_price"] for i in items_data)
+        except Exception as e:
+            print(f"Failed to fetch orders from Order Service: {e}")
+            
         total_bill = play_fee + service_total
         
         active_session.end_time = end_time
@@ -117,7 +147,8 @@ def stop_session(table_id: int, ctx: StoreContext = Depends(get_store_context)):
                 "play_fee": play_fee,
                 "service_total": service_total,
                 "total_bill": total_bill,
-                "items": [{"name": i.item_name, "item_name": i.item_name, "quantity": i.quantity, "price": i.price, "total_price": i.total_price} for i in items]
+                "items": items_data
+
             }
         })
     except Exception as e:
@@ -171,7 +202,7 @@ def transfer_session(from_table_id: int, to_table_id: int, ctx: StoreContext = D
         }
         
         try:
-            r = redis_lib.Redis(host='127.0.0.1', port=6379, db=0, socket_timeout=0.2, socket_connect_timeout=0.2)
+            r = redis_lib.Redis(host=os.environ.get('REDIS_HOST', '127.0.0.1'), port=6379, db=0, socket_timeout=0.2, socket_connect_timeout=0.2)
             r.set(f"client_msg_{from_table_id}", json.dumps(notify_data))
             r.expire(f"client_msg_{from_table_id}", 300)
             
@@ -205,9 +236,11 @@ def get_history(store_id: int = None, ctx: StoreContext = Depends(get_store_cont
         result = []
         for s in sessions:
             table = db.query(BilliardTable).filter(BilliardTable.id == s.table_id).first()
-            items = db.query(SessionOrderItem).filter(SessionOrderItem.session_id == s.id).all()
             
-            service_total = sum(i.total_price for i in items)
+            # In a real microservice, we would batch fetch this or store a snapshot in Session Service.
+            # For now, we skip fetching items in history list to avoid N+1 queries to Order Service,
+            # or just default to empty items. The total is already saved in s.services_fee.
+            service_total = s.services_fee or 0
             total_bill = (s.play_fee or 0) + service_total
             
             can_delete = False
@@ -227,7 +260,8 @@ def get_history(store_id: int = None, ctx: StoreContext = Depends(get_store_cont
                 "service_total": service_total,
                 "total_bill": total_bill,
                 "can_delete": can_delete,
-                "items": [{"name": i.item_name, "item_name": i.item_name, "quantity": i.quantity, "price": i.price, "total_price": i.total_price} for i in items]
+                "items": []
+
             })
         return JSONResponse(result)
     finally:
@@ -257,7 +291,7 @@ def delete_history(payload: dict, ctx: StoreContext = Depends(get_store_context)
                     cannot_delete_count += 1
                     continue
                     
-            db.query(SessionOrderItem).filter(SessionOrderItem.session_id == session.id).delete()
+            # In real MS, we publish an event SESSION_DELETED so Order Service deletes items.
             db.delete(session)
             deleted_count += 1
             

@@ -1,3 +1,4 @@
+import os
 import json
 import time
 import redis
@@ -8,7 +9,7 @@ from api.websocket_server import websocket_manager
 client_messages_store: Dict[int, Any] = {}
 
 class NotificationService:
-    REDIS_HOST = '127.0.0.1'
+    REDIS_HOST = os.environ.get('REDIS_HOST', '127.0.0.1')
     REDIS_PORT = 6379
 
     @staticmethod

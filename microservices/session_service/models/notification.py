@@ -1,7 +1,7 @@
 import enum
 from datetime import datetime
 from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey
-from database.models.base import Base
+from .base import Base
 
 class NotificationStatus(str, enum.Enum):
     PENDING = "PENDING"

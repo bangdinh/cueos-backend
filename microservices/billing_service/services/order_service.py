@@ -1,3 +1,4 @@
+import os
 import time
 from sqlalchemy.orm import Session
 from ..models.session import SessionOrderItem, PlaySession
@@ -5,7 +6,7 @@ from .notification_service import NotificationService
 from typing import List, Dict, Any
 import httpx
 
-INVENTORY_SERVICE_URL = "http://127.0.0.1:8002"
+INVENTORY_SERVICE_URL = os.environ.get("INVENTORY_SERVICE_URL", "http://127.0.0.1:8002")
 
 class OrderService:
     @staticmethod

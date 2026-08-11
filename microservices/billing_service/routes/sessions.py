@@ -437,7 +437,7 @@ def notify_client(table_id: int, payload: dict):
     }
     client_messages_store[table_id] = data
     try:
-        r = redis_lib.Redis(host='127.0.0.1', port=6379, db=0, socket_timeout=0.2, socket_connect_timeout=0.2)
+        r = redis_lib.Redis(host=os.environ.get('REDIS_HOST', '127.0.0.1'), port=6379, db=0, socket_timeout=0.2, socket_connect_timeout=0.2)
         r.set(f"client_msg_{table_id}", json.dumps(data))
         r.expire(f"client_msg_{table_id}", 300)
     except Exception:
@@ -450,7 +450,7 @@ def poll_client(table_id: int):
     if table_id in client_messages_store:
         data = client_messages_store.pop(table_id)
     try:
-        r = redis_lib.Redis(host='127.0.0.1', port=6379, db=0, socket_timeout=0.2, socket_connect_timeout=0.2)
+        r = redis_lib.Redis(host=os.environ.get('REDIS_HOST', '127.0.0.1'), port=6379, db=0, socket_timeout=0.2, socket_connect_timeout=0.2)
         if data:
             r.delete(f"client_msg_{table_id}")
         else:
@@ -511,7 +511,7 @@ def transfer_session(from_table_id: int, to_table_id: int, ctx: StoreContext = D
         client_messages_store[from_table_id] = notify_data
         
         try:
-            r = redis_lib.Redis(host='127.0.0.1', port=6379, db=0, socket_timeout=0.2, socket_connect_timeout=0.2)
+            r = redis_lib.Redis(host=os.environ.get('REDIS_HOST', '127.0.0.1'), port=6379, db=0, socket_timeout=0.2, socket_connect_timeout=0.2)
             r.set(f"client_msg_{from_table_id}", json.dumps(notify_data))
             r.expire(f"client_msg_{from_table_id}", 300)
         except Exception:
