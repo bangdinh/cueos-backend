@@ -84,8 +84,52 @@ def save_highlight_clip(table_id, frame_buffer, fps=15):
     return filename
 
 
-def process_camera_stream(table_id: int, rtsp_url: str):
-    log_to_file(table_id, "--- Bat dau khoi dong AI stream ---")
+def emit_ai_event(table_id: int, event_type: str, confidence: float = 1.0, message: str = "", clip_url: str = "", image: str = "", store_id: int = 1):
+    event_data = {
+        "table_id": table_id,
+        "store_id": store_id,
+        "event_type": event_type,
+        "confidence": confidence,
+        "message": message,
+        "clip_url": clip_url,
+        "image": image
+    }
+    payload_str = json.dumps(event_data)
+    try:
+        redis_client.publish(f"bida_ai_events:store_{store_id}", payload_str)
+        redis_client.publish("bida_ai_events", payload_str)
+        redis_client.set('latest_ai_event', payload_str)
+    except Exception as e:
+        log_to_file(table_id, f"Loi publish event len Redis: {e}")
+    return event_data
+
+def start_command_listener(table_id: int, store_id: int = 1):
+    import threading
+    def _listen():
+        try:
+            r = redis.Redis(host='127.0.0.1', port=6379, db=0, socket_timeout=0.2, socket_connect_timeout=0.2)
+            pubsub = r.pubsub()
+            pubsub.subscribe(f'bida_commands:store_{store_id}', 'bida_commands')
+            for message in pubsub.listen():
+                if message['type'] not in ('message', 'pmessage'):
+                    continue
+                try:
+                    data = json.loads(message['data'])
+                    if data.get("command") == "save_clip":
+                        tid = data.get("table_id")
+                        if tid == table_id or tid == 0:
+                            redis_client.set(f"clip_request_{table_id}", "1")
+                except Exception:
+                    pass
+        except Exception as e:
+            log_to_file(table_id, f"Loi command listener redis: {e}")
+    t = threading.Thread(target=_listen, daemon=True)
+    t.start()
+
+
+def process_camera_stream(table_id: int, rtsp_url: str, store_id: int = 1):
+    log_to_file(table_id, f"--- Bat dau khoi dong AI stream (store_id={store_id}) ---")
+    start_command_listener(table_id, store_id=store_id)
     try:
         cam_source = int(rtsp_url) if str(rtsp_url).isdigit() else rtsp_url
         cap = cv2.VideoCapture(cam_source)
@@ -157,15 +201,14 @@ def process_camera_stream(table_id: int, rtsp_url: str):
                 clip_filename = save_highlight_clip(table_id, frame_buffer, FPS_ESTIMATE)
                 if clip_filename:
                     redis_client.set(f"clip_ready_{table_id}", clip_filename)
-                    event_data = {
-                        "table_id": table_id,
-                        "event_type": "CLIP_READY",
-                        "confidence": 1.0,
-                        "message": f"Clip Highlight Ban {table_id} da san sang tai ve!",
-                        "clip_url": f"/clips/{clip_filename}",
-                        "image": ""
-                    }
-                    redis_client.set('latest_ai_event', json.dumps(event_data))
+                    emit_ai_event(
+                        table_id=table_id,
+                        event_type="CLIP_READY",
+                        confidence=1.0,
+                        message=f"Clip Highlight Ban {table_id} da san sang tai ve!",
+                        clip_url=f"/clips/{clip_filename}",
+                        store_id=store_id
+                    )
 
             frame1 = frame2
             ret, frame2 = cap.read()

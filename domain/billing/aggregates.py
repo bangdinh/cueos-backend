@@ -1,25 +1,48 @@
-from typing import List
+from typing import List, Optional
 from .value_objects import Money, PlayDuration
-from .entities import OrderItem
+from .entities import OrderItem, Table
+from domain.store.exceptions import CrossStoreAccessError
 
 class BillAggregate:
     """
     DDD Aggregate Root: Quản lý toàn bộ phiên tính tiền của một bàn bida.
     Nó là đối tượng duy nhất mà bên ngoài (API, Service, UI) được phép giao tiếp để tính toán hóa đơn.
-    Đảm bảo tính nhất quán và thực thi các luật nghiệp vụ (VIP surcharge, Discount).
+    Đảm bảo tính nhất quán và thực thi các luật nghiệp vụ (VIP surcharge, Discount, Multi-Store Tenant Isolation).
     """
-    def __init__(self, table_id: int, table_tier: str, base_hourly_rate: Money):
+    def __init__(self, table_id: int, table_tier: str, base_hourly_rate: Money, store_id: int = 1):
         self.table_id = table_id
         self.table_tier = table_tier.upper()
         self.base_hourly_rate = base_hourly_rate
+        self.store_id = store_id
         self.duration = PlayDuration(0)
         self._items: List[OrderItem] = []
         self._discount_percent: float = 0.0
+        self._table: Optional[Table] = None
+        
+    def assign_table(self, table: Table):
+        """Gán bàn chơi và tự validation đảm bảo không thao tác lệch store_id."""
+        if table.store_id != self.store_id:
+            raise CrossStoreAccessError(
+                target_store_id=table.store_id,
+                user_store_id=self.store_id,
+                message=f"Bàn thuộc cửa hàng {table.store_id} không khớp với hóa đơn cửa hàng {self.store_id}"
+            )
+        self._table = table
+        self.table_id = table.table_id
+        self.table_tier = table.table_tier.upper()
+        self.base_hourly_rate = table.base_hourly_rate
         
     def set_play_duration(self, duration: PlayDuration):
         self.duration = duration
         
     def add_order_item(self, item: OrderItem):
+        """Thêm món và tự validation đảm bảo không thao tác lệch store_id."""
+        if item.store_id != self.store_id:
+            raise CrossStoreAccessError(
+                target_store_id=item.store_id,
+                user_store_id=self.store_id,
+                message=f"Món gọi thuộc cửa hàng {item.store_id} không khớp với hóa đơn cửa hàng {self.store_id}"
+            )
         # Kiểm tra xem món đã có trong bill chưa, nếu có thì cộng dồn số lượng
         for existing in self._items:
             if existing.item_id == item.item_id:

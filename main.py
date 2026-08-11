@@ -1,4 +1,5 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from typing import Optional
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, status
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
@@ -10,15 +11,17 @@ from api.redis_listener import start_redis_listener_thread
 from api.websocket_server import websocket_manager
 from database.database import init_db, SessionLocal
 from database.crud import seed_initial_tables, seed_initial_products
-from database.models import BilliardTable, PlaySession, SessionOrderItem, Product
+from database.seed import seed_default_store_and_users
+from database.models import BilliardTable, PlaySession, SessionOrderItem, Product, CustomerModel, UserRole
 
 # Import HTML Templates
 from templates.admin_template import admin_html
 from templates.customer_template import customer_menu_html
 
 # Import Modular API Routers
-from api.routes import products, tables, sessions, reports
-from api.routes.sessions import generate_table_token
+from api.routes import products, tables, client_realtime, reports
+from api import auth
+from api.routes.client_realtime import generate_table_token
 
 CLIPS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "clips")
 ARCHIVE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "archive")
@@ -31,11 +34,15 @@ os.makedirs("assets", exist_ok=True)
 async def lifespan(app: FastAPI):
     init_db()
     db = SessionLocal()
-    seed_initial_tables(db)
-    seed_initial_products(db)
+    seed_default_store_and_users(db)
+    for s_id in [1, 2, 3]:
+        seed_initial_tables(db, store_id=s_id)
+        seed_initial_products(db, store_id=s_id)
     db.close()
     loop = asyncio.get_running_loop()
     start_redis_listener_thread(loop)
+    from workers.sync_hq_worker import start_sync_worker_daemon
+    start_sync_worker_daemon(interval_seconds=60)
     yield
 
 app = FastAPI(title="Bida AI Management System", lifespan=lifespan)
@@ -47,8 +54,9 @@ app.mount("/assets", StaticFiles(directory="assets"), name="assets")
 # Include Modular Routers
 app.include_router(products.router)
 app.include_router(tables.router)
-app.include_router(sessions.router)
+app.include_router(client_realtime.router)
 app.include_router(reports.router)
+app.include_router(auth.router)
 
 # Page Routes
 @app.get("/")
@@ -130,10 +138,35 @@ async def customer_menu(table_id: int, token: str):
 
 # WebSocket Realtime Endpoint
 @app.websocket("/ws/admin")
-async def websocket_endpoint(websocket: WebSocket):
-    await websocket_manager.connect(websocket)
+async def websocket_endpoint(websocket: WebSocket, token: Optional[str] = None):
+    from api.auth import verify_token
+    auth_header = websocket.headers.get("authorization")
+    jwt_str = None
+    if token:
+        jwt_str = token
+    elif auth_header and auth_header.startswith("Bearer "):
+        jwt_str = auth_header.split(" ")[1]
+        
+    if not jwt_str:
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+        
     try:
-        while True:
-            data = await websocket.receive_text()
-    except WebSocketDisconnect:
-        websocket_manager.disconnect(websocket)
+        payload = verify_token(jwt_str)
+        role_str = str(payload.get("role", "STORE_MANAGER")).upper()
+        is_hq = (role_str == UserRole.SUPER_ADMIN.value)
+        token_store_id = payload.get("store_id")
+        sid = payload.get("sid")
+        if not is_hq and token_store_id is None:
+            token_store_id = 1
+        elif token_store_id is not None:
+            token_store_id = int(token_store_id)
+            
+        await websocket_manager.connect(websocket, store_id=token_store_id, is_hq=is_hq, sid=sid)
+        try:
+            while True:
+                data = await websocket.receive_text()
+        except WebSocketDisconnect:
+            websocket_manager.disconnect(websocket)
+    except Exception:
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)

@@ -4,8 +4,9 @@ from datetime import datetime, timedelta
 # Nhập các class nghiệp vụ (Domain Objects) - Hiện tại chưa có code thực tế (Sẽ fail khi chạy - bước RED)
 try:
     from domain.billing.value_objects import Money, PlayDuration
-    from domain.billing.entities import OrderItem
+    from domain.billing.entities import OrderItem, Table
     from domain.billing.aggregates import BillAggregate
+    from domain.store.exceptions import CrossStoreAccessError
 except ImportError:
     pass
 
@@ -79,3 +80,39 @@ class TestBillingDomainTDD:
         
         assert bill.play_fee().amount == 60000  # Đã tính phụ thu VIP 20%
         assert bill.calculate_total().amount == 54000  # Đã giảm 10%
+
+    def test_bill_aggregate_store_id_assignment(self):
+        """Test BillAggregate nhận store_id và cho phép thêm OrderItem/Table cùng store_id."""
+        bill = BillAggregate(
+            table_id=10,
+            table_tier="STANDARD",
+            base_hourly_rate=Money(50000),
+            store_id=5
+        )
+        assert bill.store_id == 5
+        
+        table = Table(table_id=10, name="Bàn 1", table_tier="STANDARD", base_hourly_rate=Money(50000), store_id=5)
+        bill.assign_table(table)
+        
+        item = OrderItem(item_id=1, name="Coca", unit_price=Money(15000), quantity=1, store_id=5)
+        bill.add_order_item(item)
+        assert len(bill._items) == 1
+
+    def test_bill_aggregate_cross_store_access_raises_error(self):
+        """Test BillAggregate ném CrossStoreAccessError khi thêm OrderItem hoặc Table khác store_id."""
+        bill = BillAggregate(
+            table_id=10,
+            table_tier="STANDARD",
+            base_hourly_rate=Money(50000),
+            store_id=1
+        )
+        
+        table_other_store = Table(table_id=20, name="Bàn 2 Quán Khác", table_tier="STANDARD", base_hourly_rate=Money(50000), store_id=2)
+        with pytest.raises(CrossStoreAccessError) as exc_info:
+            bill.assign_table(table_other_store)
+        assert "Bàn thuộc cửa hàng 2 không khớp với hóa đơn cửa hàng 1" in str(exc_info.value)
+        
+        item_other_store = OrderItem(item_id=1, name="Sting", unit_price=Money(15000), quantity=1, store_id=2)
+        with pytest.raises(CrossStoreAccessError) as exc_info:
+            bill.add_order_item(item_other_store)
+        assert "Món gọi thuộc cửa hàng 2 không khớp với hóa đơn cửa hàng 1" in str(exc_info.value)

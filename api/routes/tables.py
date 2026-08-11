@@ -6,7 +6,8 @@ import time
 import re
 import math
 from datetime import datetime
-from fastapi import APIRouter, Response
+from fastapi import APIRouter, Response, Depends
+from api.middleware.store_context import StoreContext, get_store_context
 from fastapi.responses import JSONResponse, StreamingResponse, FileResponse
 import redis as redis_lib
 from database.database import SessionLocal
@@ -25,63 +26,60 @@ client_messages_store = {}
 router = APIRouter(prefix="/api", tags=["Tables"])
 
 @router.get("/tables")
-async def list_tables():
-    import asyncio
-    loop = asyncio.get_event_loop()
-    
-    def _fetch():
-        db = SessionLocal()
-        try:
+def list_tables(store_id: int = None, ctx: StoreContext = Depends(get_store_context)):
+    db = SessionLocal()
+    try:
+        target = store_id if (ctx.role.value == 'SUPER_ADMIN' and store_id) else ctx.store_id
+        if target:
+            tables = db.query(BilliardTable).filter(BilliardTable.store_id == target).order_by(BilliardTable.id).all()
+        else:
             tables = db.query(BilliardTable).order_by(BilliardTable.id).all()
-            result = []
-            for t in tables:
-                active_session = db.query(PlaySession).filter(
-                    PlaySession.table_id == t.id, 
-                    PlaySession.status == "ACTIVE"
-                ).first()
+        
+        result = []
+        for t in tables:
+            active_session = db.query(PlaySession).filter(
+                PlaySession.table_id == t.id,
+                PlaySession.status == "ACTIVE"
+            ).first()
+            
+            session_data = None
+            if active_session:
+                items = db.query(SessionOrderItem).filter(
+                    SessionOrderItem.session_id == active_session.id
+                ).all()
+                items_list = [
+                    {"id": item.id, "item_name": item.item_name, "quantity": item.quantity,
+                     "price": item.price, "total_price": item.total_price}
+                    for item in items
+                ]
+                session_data = {
+                    "id": active_session.id,
+                    "start_time": active_session.start_time.isoformat() + "Z",
+                    "order_items": items_list
+                }
                 
-                session_data = None
-                if active_session:
-                    items = db.query(SessionOrderItem).filter(
-                        SessionOrderItem.session_id == active_session.id
-                    ).all()
-                    items_list = []
-                    for item in items:
-                        items_list.append({
-                            "id": item.id,
-                            "item_name": item.item_name,
-                            "quantity": item.quantity,
-                            "price": item.price,
-                            "total_price": item.total_price
-                        })
-                    
-                    session_data = {
-                        "id": active_session.id,
-                        "start_time": active_session.start_time.isoformat() + "Z",
-                        "order_items": items_list
-                    }
-                    
-                result.append({
-                    "id": t.id,
-                    "name": t.name,
-                    "camera_url": t.camera_url,
-                    "current_status": t.current_status,
-                    "table_type": t.table_type,
-                    "table_tier": t.table_tier,
-                    "price_per_hour": t.price_per_hour,
-                    "qr_token": generate_table_token(t.id),
-                    "active_session": session_data
-                })
-            return result
-        finally:
-            db.close()
-    
-    result = await loop.run_in_executor(None, _fetch)
-    return JSONResponse(result)
+            result.append({
+                "id": t.id,
+                "store_id": t.store_id,
+                "name": t.name,
+                "camera_url": t.camera_url,
+                "current_status": t.current_status,
+                "table_type": t.table_type,
+                "table_tier": t.table_tier,
+                "price_per_hour": t.price_per_hour,
+                "qr_token": generate_table_token(t.id),
+                "active_session": session_data
+            })
+        return JSONResponse(result)
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+    finally:
+        db.close()
 
 
 @router.post("/admin/tables/add")
-async def admin_add_table(payload: dict):
+def admin_add_table(payload: dict, ctx: StoreContext = Depends(get_store_context)):
+    ctx.require_admin_permission()
     name = payload.get("name", "").strip()
     table_type = payload.get("table_type", "LIP")
     table_tier = payload.get("table_tier", "STANDARD")
@@ -94,6 +92,7 @@ async def admin_add_table(payload: dict):
     db = SessionLocal()
     try:
         new_table = BilliardTable(
+            store_id=ctx.store_id,
             name=name,
             camera_url=camera_url,
             table_type=table_type,
@@ -110,7 +109,8 @@ async def admin_add_table(payload: dict):
         db.close()
 
 @router.post("/admin/tables/update")
-async def admin_update_table(payload: dict):
+def admin_update_table(payload: dict, ctx: StoreContext = Depends(get_store_context)):
+    ctx.require_admin_permission()
     table_id = payload.get("id")
     name = payload.get("name", "").strip()
     table_type = payload.get("table_type", "LIP")
@@ -123,7 +123,7 @@ async def admin_update_table(payload: dict):
         
     db = SessionLocal()
     try:
-        table = db.query(BilliardTable).filter(BilliardTable.id == table_id).first()
+        table = db.query(BilliardTable).filter(BilliardTable.id == table_id, BilliardTable.store_id == ctx.store_id).first() if ctx.role.value != 'SUPER_ADMIN' else db.query(BilliardTable).filter(BilliardTable.id == table_id).first()
         if not table:
             return JSONResponse({"status": "error", "message": "Khong tim thay ban"}, status_code=404)
             
@@ -140,10 +140,11 @@ async def admin_update_table(payload: dict):
         db.close()
 
 @router.delete("/admin/tables/{table_id}")
-async def admin_delete_table(table_id: int):
+def admin_delete_table(table_id: int, ctx: StoreContext = Depends(get_store_context)):
+    ctx.require_admin_permission()
     db = SessionLocal()
     try:
-        table = db.query(BilliardTable).filter(BilliardTable.id == table_id).first()
+        table = db.query(BilliardTable).filter(BilliardTable.id == table_id, BilliardTable.store_id == ctx.store_id).first() if ctx.role.value != 'SUPER_ADMIN' else db.query(BilliardTable).filter(BilliardTable.id == table_id).first()
         if not table:
             return JSONResponse({"status": "error", "message": "Khong tim thay ban"}, status_code=404)
         if table.current_status == "PLAYING":
@@ -158,10 +159,10 @@ async def admin_delete_table(table_id: int):
         db.close()
 
 @router.get("/table-status/{table_id}")
-async def get_table_status(table_id: int):
+def get_table_status(table_id: int, ctx: StoreContext = Depends(get_store_context)):
     db = SessionLocal()
     try:
-        table = db.query(BilliardTable).filter(BilliardTable.id == table_id).first()
+        table = db.query(BilliardTable).filter(BilliardTable.id == table_id, BilliardTable.store_id == ctx.store_id).first() if ctx.role.value != 'SUPER_ADMIN' else db.query(BilliardTable).filter(BilliardTable.id == table_id).first()
         if not table:
             return JSONResponse({"status": "error", "message": "Không tìm thấy bàn"}, status_code=404)
             

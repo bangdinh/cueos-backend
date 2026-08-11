@@ -1450,7 +1450,7 @@ customer_menu_html = """<!DOCTYPE html>
             };
             xhr.send();
         }
-        setInterval(pollClientMessages, 3000);
+        setInterval(pollClientMessages, 10000);
         setTimeout(pollClientMessages, 1000);
 
         function submitOrder() {

@@ -17,29 +17,18 @@ server_debug.log
 server_output.log
 workers_debug.log
 
-# Media & Camera Streams (Không up video/ảnh record nặng)
+# Media & Camera Streams (Không up video record nặng)
 clips/
 recordings/
-assets/
 *.webp
-*.png
-*.jpg
 *.mp4
 
-# Binary Executables
+# Binary Executables (Không up file .exe nặng)
 *.exe
 cloudflared.exe
 
-# Frontend Debug / Test Files (Nếu chỉ muốn up thuần Backend)
+# Dependencies (Không up thư viện node_modules nặng)
 node_modules/
-package-lock.json
-client.html
-menu_debug.html
-menu_debug2.html
-menu_output.html
-menu_output2.html
-test.html
-test.js
 
 # IDE & OS
 .vscode/
