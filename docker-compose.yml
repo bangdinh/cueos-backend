@@ -1,0 +1,116 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - bida-network
+
+  gateway:
+    build: .
+    command: uvicorn microservices.gateway.main:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    environment:
+      - AUTH_SERVICE_URL=http://auth-service:8001
+      - INVENTORY_SERVICE_URL=http://inventory-service:8002
+      - BILLING_SERVICE_URL=http://billing-service:8003
+      - ORDER_SERVICE_URL=http://order-service:8005
+      - SESSION_SERVICE_URL=http://session-service:8006
+    networks:
+      - bida-network
+    depends_on:
+      - auth-service
+      - inventory-service
+      - billing-service
+      - order-service
+      - session-service
+
+  auth-service:
+    build: .
+    command: uvicorn microservices.auth_service.main:app --host 0.0.0.0 --port 8001
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./auth.db:/app/auth.db
+    networks:
+      - bida-network
+
+  inventory-service:
+    build: .
+    command: uvicorn microservices.inventory_service.main:app --host 0.0.0.0 --port 8002
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./inventory.db:/app/inventory.db
+    environment:
+      - REDIS_HOST=redis
+    networks:
+      - bida-network
+    depends_on:
+      - redis
+
+  inventory-worker:
+    build: .
+    command: python -m microservices.inventory_service.redis_listener
+    volumes:
+      - ./inventory.db:/app/inventory.db
+    environment:
+      - REDIS_HOST=redis
+    networks:
+      - bida-network
+    depends_on:
+      - redis
+      - inventory-service
+
+  billing-service:
+    build: .
+    command: uvicorn microservices.billing_service.main:app --host 0.0.0.0 --port 8003
+    ports:
+      - "8003:8003"
+    volumes:
+      - ./billing.db:/app/billing.db
+    environment:
+      - REDIS_HOST=redis
+      - INVENTORY_SERVICE_URL=http://inventory-service:8002
+    networks:
+      - bida-network
+    depends_on:
+      - redis
+
+  order-service:
+    build: .
+    command: uvicorn microservices.order_service.main:app --host 0.0.0.0 --port 8005
+    ports:
+      - "8005:8005"
+    volumes:
+      - ./order.db:/app/order.db
+    environment:
+      - REDIS_HOST=redis
+      - SESSION_SERVICE_URL=http://session-service:8006
+      - INVENTORY_SERVICE_URL=http://inventory-service:8002
+    networks:
+      - bida-network
+    depends_on:
+      - redis
+
+  session-service:
+    build: .
+    command: uvicorn microservices.session_service.main:app --host 0.0.0.0 --port 8006
+    ports:
+      - "8006:8006"
+    volumes:
+      - ./session.db:/app/session.db
+    environment:
+      - REDIS_HOST=redis
+      - ORDER_SERVICE_URL=http://order-service:8005
+    networks:
+      - bida-network
+    depends_on:
+      - redis
+
+networks:
+  bida-network:
+    driver: bridge

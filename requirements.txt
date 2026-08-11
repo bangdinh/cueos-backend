@@ -7,3 +7,6 @@ pydantic
 websockets
 mediapipe
 pymysql
+PyJWT
+httpx  
+ 
