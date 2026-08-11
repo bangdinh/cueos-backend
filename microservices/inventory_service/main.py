@@ -13,9 +13,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from .redis_listener import start_redis_listener_thread
+
 @app.on_event("startup")
 def on_startup():
     init_db()
+    start_redis_listener_thread()
 
 app.include_router(products.router, tags=["Products"])
 app.include_router(tables.router, tags=["Tables"])

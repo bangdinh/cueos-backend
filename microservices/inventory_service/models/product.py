@@ -12,5 +12,3 @@ class Product(Base):
     stock = Column(Integer, default=0)
     category = Column(String(50))
     image_url = Column(String(255), default="")
-    
-    order_items = relationship("SessionOrderItem", back_populates="product")

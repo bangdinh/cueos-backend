@@ -1,6 +1,6 @@
 from datetime import datetime
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
-from database.models.base import Base
+from .base import Base
 
 class CustomerModel(Base):
     __tablename__ = "customers"

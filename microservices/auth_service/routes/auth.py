@@ -91,7 +91,7 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    role_str = user.role.upper() if user.role else "MANAGER"
+    role_str = user.role.upper() if user.role else "STORE_MANAGER"
     store_id = None if role_str == UserRole.SUPER_ADMIN.value else user.store_id
     
     active_sid = ACTIVE_USER_SESSIONS.get(user.id)

@@ -1,11 +1,11 @@
 import enum
 from sqlalchemy import Column, Integer, String, ForeignKey
-from database.models.base import Base
+from .base import Base
 
 class UserRole(str, enum.Enum):
     SUPER_ADMIN = "SUPER_ADMIN"
-    ADMIN = "ADMIN"
-    MANAGER = "MANAGER"
+    ADMIN = "OWNER"
+    MANAGER = "STORE_MANAGER"
 
 class UserModel(Base):
     __tablename__ = "users"

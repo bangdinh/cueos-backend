@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI, Request, Response, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import httpx
@@ -13,16 +14,16 @@ app.add_middleware(
 )
 
 SERVICES = {
-    "auth": "http://127.0.0.1:8001",
-    "products": "http://127.0.0.1:8002",
-    "tables": "http://127.0.0.1:8002",
-    "session": "http://127.0.0.1:8006",
-    "reports": "http://127.0.0.1:8003",
-    "history": "http://127.0.0.1:8006",
-    "customer-order": "http://127.0.0.1:8003",
-    "client-notify": "http://127.0.0.1:8003",
-    "client-poll": "http://127.0.0.1:8003",
-    "poll": "http://127.0.0.1:8003"
+    "auth": os.environ.get("AUTH_SERVICE_URL", "http://127.0.0.1:8001"),
+    "products": os.environ.get("INVENTORY_SERVICE_URL", "http://127.0.0.1:8002"),
+    "tables": os.environ.get("INVENTORY_SERVICE_URL", "http://127.0.0.1:8002"),
+    "session": os.environ.get("SESSION_SERVICE_URL", "http://127.0.0.1:8006"),
+    "reports": os.environ.get("BILLING_SERVICE_URL", "http://127.0.0.1:8003"),
+    "history": os.environ.get("SESSION_SERVICE_URL", "http://127.0.0.1:8006"),
+    "customer-order": os.environ.get("BILLING_SERVICE_URL", "http://127.0.0.1:8003"),
+    "client-notify": os.environ.get("BILLING_SERVICE_URL", "http://127.0.0.1:8003"),
+    "client-poll": os.environ.get("BILLING_SERVICE_URL", "http://127.0.0.1:8003"),
+    "poll": os.environ.get("BILLING_SERVICE_URL", "http://127.0.0.1:8003")
 }
 
 @app.api_route("/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
@@ -35,9 +36,9 @@ async def gateway(request: Request, path: str):
         
         # Specific routing for order service (port 8005)
         if service_name == "session" and len(parts) > 2 and parts[2] in ("add-item", "add-items", "item"):
-            target_url = f"http://127.0.0.1:8005/{path}"
+            target_url = f"{os.environ.get('ORDER_SERVICE_URL', 'http://127.0.0.1:8005')}/{path}"
         elif service_name == "customer-order":
-            target_url = f"http://127.0.0.1:8005/{path}"
+            target_url = f"{os.environ.get('ORDER_SERVICE_URL', 'http://127.0.0.1:8005')}/{path}"
         elif service_name in SERVICES:
             target_url = f"{SERVICES[service_name]}/{path}"
             

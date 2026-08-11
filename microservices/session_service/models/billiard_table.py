@@ -1,6 +1,6 @@
 import enum
 from sqlalchemy import Column, Integer, String, Float, ForeignKey
-from database.models.base import Base
+from .base import Base
 
 class TableStatus(str, enum.Enum):
     EMPTY = "EMPTY"
