@@ -17,6 +17,7 @@ class PlaySession(Base):
     total_amount = Column(Float, default=0.0)
     status = Column(String(50), default="ACTIVE", index=True) # ACTIVE, COMPLETED
     is_synced_to_hq = Column(Boolean, default=False, index=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     order_items = relationship("SessionOrderItem", back_populates="session", cascade="all, delete-orphan")
 
@@ -32,6 +33,7 @@ class SessionOrderItem(Base):
     price = Column(Float)
     total_price = Column(Float)
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     session = relationship("PlaySession", back_populates="order_items")
     product = relationship("Product", back_populates="order_items")

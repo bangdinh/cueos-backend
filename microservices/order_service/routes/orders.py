@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 import redis as redis_lib
 
 from ..database import SessionLocal
-from ..models.order_item import SessionOrderItem
+from database.models.order_item import SessionOrderItem
 
 # Token generator helper
 import hashlib

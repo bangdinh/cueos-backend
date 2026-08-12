@@ -10,7 +10,7 @@ from fastapi import APIRouter, Response, Depends
 from fastapi.responses import JSONResponse, StreamingResponse, FileResponse
 import redis as redis_lib
 from ..database import SessionLocal
-from ..models.session import PlaySession, SessionOrderItem
+from database.models.session import PlaySession, SessionOrderItem
 # WS disabled
 from ..middleware.store_context import StoreContext, get_store_context
 from fastapi import Depends
@@ -44,7 +44,7 @@ def customer_order(table_id: int, token: str, payload: dict):
         
     db = SessionLocal()
     try:
-        table = db.query(BilliardTable).filter(BilliardTable.id == table_id).first()
+        table = db.query(BilliardTable).filter(BilliardTable.deleted_at == None).filter(BilliardTable.id == table_id).first()
         if not table:
             return JSONResponse({"status": "error", "message": "Bàn không tồn tại"}, status_code=404)
         if table.current_status != "PLAYING":
@@ -67,7 +67,7 @@ def customer_order(table_id: int, token: str, payload: dict):
             if not item_name or quantity <= 0:
                 continue
                 
-            product = db.query(Product).filter(Product.name == item_name).first()
+            product = db.query(Product).filter(Product.deleted_at == None).filter(Product.name == item_name).first()
             if product:
                 product.stock -= quantity
                 if product.stock < 0: product.stock = 0
@@ -135,7 +135,7 @@ def start_session(table_id: int, ctx: StoreContext = Depends(get_store_context))
     ctx.require_write_permission()
     db = SessionLocal()
     try:
-        table = db.query(BilliardTable).filter(BilliardTable.id == table_id).first()
+        table = db.query(BilliardTable).filter(BilliardTable.deleted_at == None).filter(BilliardTable.id == table_id).first()
         if not table:
             return JSONResponse({"status": "error", "message": "Khong tim thay ban"}, status_code=404)
         if table.current_status == "PLAYING":
@@ -213,7 +213,7 @@ def add_items_to_session(table_id: int, payload: dict, ctx: StoreContext = Depen
         
     db = SessionLocal()
     try:
-        table = db.query(BilliardTable).filter(BilliardTable.id == table_id).first()
+        table = db.query(BilliardTable).filter(BilliardTable.deleted_at == None).filter(BilliardTable.id == table_id).first()
         if not table:
             return JSONResponse({"status": "error", "message": "Không tìm thấy bàn!"}, status_code=404)
             
@@ -234,7 +234,7 @@ def add_items_to_session(table_id: int, payload: dict, ctx: StoreContext = Depen
             if not item_name or quantity <= 0 or price < 0:
                 continue
                 
-            product = db.query(Product).filter(Product.name == item_name).first()
+            product = db.query(Product).filter(Product.deleted_at == None).filter(Product.name == item_name).first()
             if product:
                 product.stock -= quantity
                 if product.stock < 0: product.stock = 0
@@ -362,7 +362,7 @@ def stop_session(table_id: int, ctx: StoreContext = Depends(get_store_context)):
     ctx.require_write_permission()
     db = SessionLocal()
     try:
-        table = db.query(BilliardTable).filter(BilliardTable.id == table_id).first()
+        table = db.query(BilliardTable).filter(BilliardTable.deleted_at == None).filter(BilliardTable.id == table_id).first()
         if not table:
             return JSONResponse({"status": "error", "message": "Khong tim thay ban"}, status_code=404)
         if table.current_status != "PLAYING":
@@ -473,8 +473,8 @@ def transfer_session(from_table_id: int, to_table_id: int, ctx: StoreContext = D
         if from_table_id == to_table_id:
             return JSONResponse({"status": "error", "message": "Không thể chuyển sang cùng bàn!"}, status_code=400)
             
-        from_table = db.query(BilliardTable).filter(BilliardTable.id == from_table_id).first()
-        to_table = db.query(BilliardTable).filter(BilliardTable.id == to_table_id).first()
+        from_table = db.query(BilliardTable).filter(BilliardTable.deleted_at == None).filter(BilliardTable.id == from_table_id).first()
+        to_table = db.query(BilliardTable).filter(BilliardTable.deleted_at == None).filter(BilliardTable.id == to_table_id).first()
         
         if not from_table or not to_table:
             return JSONResponse({"status": "error", "message": "Bàn không tồn tại!"}, status_code=404)
@@ -551,7 +551,7 @@ def get_history(store_id: int = None, ctx: StoreContext = Depends(get_store_cont
         
         result = []
         for s in sessions:
-            table = db.query(BilliardTable).filter(BilliardTable.id == s.table_id).first()
+            table = db.query(BilliardTable).filter(BilliardTable.deleted_at == None).filter(BilliardTable.id == s.table_id).first()
             items = db.query(SessionOrderItem).filter(SessionOrderItem.session_id == s.id).all()
             
             service_total = sum(i.total_price for i in items)

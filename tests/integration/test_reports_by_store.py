@@ -40,8 +40,8 @@ class TestReportsByStoreTDD:
             resp = client.get("/api/reports/revenue?store_id=2", headers=headers)
             assert resp.status_code == 200
             content = resp.text
-            assert "Quán 2" in content
-            assert "Quán 1" not in content
+            assert "T2" in content
+            assert "T1" not in content
 
     def test_store_manager_forced_to_own_store_in_report(self):
         """STORE_MANAGER của store 1 cố truyền store_id=2 -> vẫn bị ép về store 1."""
@@ -53,5 +53,5 @@ class TestReportsByStoreTDD:
             resp = client.get("/api/reports/revenue?store_id=2", headers=headers)
             assert resp.status_code == 200
             content = resp.text
-            assert "Quán 1" in content
-            assert "Quán 2" not in content
+            assert "T1" in content
+            assert "T2" not in content

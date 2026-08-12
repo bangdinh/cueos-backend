@@ -1,10 +1,10 @@
 import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from .models.base import Base
+from database.models.base import Base
 
-# Import models to ensure they are registered with Base
-from .models.order_item import SessionOrderItem
+from database.models.order_item import SessionOrderItem
+from database.models.store import StoreModel
 
 import os
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -22,4 +22,10 @@ def get_db():
         db.close()
 
 def init_db():
-    Base.metadata.create_all(bind=engine)
+    Base.metadata.create_all(
+        bind=engine,
+        tables=[
+            SessionOrderItem.__table__,
+            StoreModel.__table__
+        ]
+    )

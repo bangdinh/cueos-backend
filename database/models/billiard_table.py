@@ -1,6 +1,7 @@
 import enum
-from sqlalchemy import Column, Integer, String, Float, ForeignKey
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime
 from database.models.base import Base
+from datetime import datetime
 
 class TableStatus(str, enum.Enum):
     EMPTY = "EMPTY"
@@ -18,3 +19,5 @@ class BilliardTable(Base):
     price_per_hour = Column(Float, default=50000.0)
     table_tier = Column(String(50), default="STANDARD")
     table_type = Column(String(50), default="LIP")
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    deleted_at = Column(DateTime, nullable=True)

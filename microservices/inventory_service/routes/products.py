@@ -10,7 +10,7 @@ from fastapi import APIRouter, Response, Depends
 from api.middleware.store_context import StoreContext, get_store_context
 from fastapi.responses import JSONResponse, StreamingResponse, FileResponse
 from ..database import SessionLocal
-from ..models.product import Product
+from database.models.product import Product
 from pydantic import BaseModel
 
 class DecreaseStockRequest(BaseModel):
@@ -34,7 +34,7 @@ def get_inventory(store_id: int = None, ctx: StoreContext = Depends(get_store_co
     db = SessionLocal()
     try:
         target = store_id if (ctx.role.value == 'SUPER_ADMIN' and store_id) else ctx.store_id
-        products = db.query(Product).filter(Product.store_id == target).all() if target else db.query(Product).all()
+        products = db.query(Product).filter(Product.deleted_at == None).filter(Product.store_id == target).all() if target else db.query(Product).filter(Product.deleted_at == None).all()
         stock_dict = {p.name: p.stock for p in products}
         return JSONResponse(stock_dict)
     finally:
@@ -45,7 +45,7 @@ def list_products(store_id: int = None, ctx: StoreContext = Depends(get_store_co
     db = SessionLocal()
     try:
         target = store_id if (ctx.role.value == 'SUPER_ADMIN' and store_id) else ctx.store_id
-        products = db.query(Product).filter(Product.store_id == target).order_by(Product.id).all() if target else db.query(Product).order_by(Product.id).all()
+        products = db.query(Product).filter(Product.deleted_at == None).filter(Product.store_id == target).order_by(Product.id).all() if target else db.query(Product).filter(Product.deleted_at == None).order_by(Product.id).all()
         return JSONResponse([
             {"id": p.id, "name": p.name, "price": p.price, "stock": p.stock, "category": p.category, "image_url": p.image_url or ""}
             for p in products
@@ -71,7 +71,7 @@ def add_product(payload: dict, ctx: StoreContext = Depends(get_store_context)):
         
     db = SessionLocal()
     try:
-        exists = db.query(Product).filter(Product.name == name).first()
+        exists = db.query(Product).filter(Product.deleted_at == None).filter(Product.name == name).first()
         if exists:
             return JSONResponse({"status": "error", "message": f"Sản phẩm '{name}' đã có sẵn trong thực đơn!"}, status_code=400)
             
@@ -98,7 +98,7 @@ def update_product(payload: dict, ctx: StoreContext = Depends(get_store_context)
         
     db = SessionLocal()
     try:
-        product = db.query(Product).filter(Product.id == prod_id, Product.store_id == ctx.store_id).first() if ctx.role.value != 'SUPER_ADMIN' else db.query(Product).filter(Product.id == prod_id).first()
+        product = db.query(Product).filter(Product.deleted_at == None).filter(Product.id == prod_id, Product.store_id == ctx.store_id).first() if ctx.role.value != 'SUPER_ADMIN' else db.query(Product).filter(Product.deleted_at == None).filter(Product.id == prod_id).first()
         if not product:
             return JSONResponse({"status": "error", "message": "Sản phẩm không tồn tại"}, status_code=404)
             
@@ -116,16 +116,15 @@ def update_product(payload: dict, ctx: StoreContext = Depends(get_store_context)
 
 @router.delete("/products/delete/{prod_id}")
 def delete_product(prod_id: int, ctx: StoreContext = Depends(get_store_context)):
-    ctx.require_admin_permission()
     db = SessionLocal()
     try:
-        product = db.query(Product).filter(Product.id == prod_id, Product.store_id == ctx.store_id).first() if ctx.role.value != 'SUPER_ADMIN' else db.query(Product).filter(Product.id == prod_id).first()
-        if not product:
-            return JSONResponse({"status": "error", "message": "Sản phẩm không tồn tại"}, status_code=404)
+        p = db.query(Product).filter(Product.deleted_at == None).filter(Product.id == prod_id, Product.store_id == ctx.store_id, Product.deleted_at == None).first()
+        if not p:
+            return JSONResponse({"status": "error", "message": "Product not found"}, status_code=404)
             
-        db.delete(product)
+        p.deleted_at = datetime.utcnow()
         db.commit()
-        return JSONResponse({"status": "ok", "message": "Đã xóa sản phẩm!"})
+        return JSONResponse({"status": "success", "message": f"Deleted {p.name}"})
     except Exception as e:
         return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
     finally:
@@ -151,7 +150,7 @@ def batch_update_products(payload: dict, ctx: StoreContext = Depends(get_store_c
             if price < 1000 or stock < 0:
                 continue
                 
-            product = db.query(Product).filter(Product.id == prod_id, Product.store_id == ctx.store_id).first() if ctx.role.value != 'SUPER_ADMIN' else db.query(Product).filter(Product.id == prod_id).first()
+            product = db.query(Product).filter(Product.deleted_at == None).filter(Product.id == prod_id, Product.store_id == ctx.store_id).first() if ctx.role.value != 'SUPER_ADMIN' else db.query(Product).filter(Product.deleted_at == None).filter(Product.id == prod_id).first()
             if product:
                 product.price = price
                 product.stock = stock
@@ -178,7 +177,7 @@ def batch_delete_products(payload: dict, ctx: StoreContext = Depends(get_store_c
     try:
         deleted_count = 0
         for prod_id in ids:
-            product = db.query(Product).filter(Product.id == int(prod_id)).first()
+            product = db.query(Product).filter(Product.deleted_at == None).filter(Product.id == int(prod_id)).first()
             if product:
                 db.delete(product)
                 deleted_count += 1

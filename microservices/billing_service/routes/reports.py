@@ -13,7 +13,7 @@ from ..database import SessionLocal
 from ..middleware.store_context import StoreContext, get_store_context
 from fastapi import Depends
 from fastapi import Depends
-from ..models.session import PlaySession, SessionOrderItem
+from database.models.session import PlaySession, SessionOrderItem
 # WS disabled
 
 # Token generator helper
@@ -59,7 +59,7 @@ def get_revenue_report(start_date: str = None, end_date: str = None, store_id: i
         writer.writerow(["Mã Hóa Đơn", "Tên Bàn", "Giờ Vào", "Giờ Ra", "Tổng Thời Gian (phút)", "Tiền Giờ (VNĐ)", "Tiền Dịch Vụ (VNĐ)", "Tổng Cộng (VNĐ)"])
         
         for session in sessions:
-            table = db.query(BilliardTable).filter(BilliardTable.id == session.table_id).first()
+            table = db.query(BilliardTable).filter(BilliardTable.deleted_at == None).filter(BilliardTable.id == session.table_id).first()
             table_name = table.name if table else f"Bàn {session.table_id}"
             
             service_total = sum([item.total_price for item in session.order_items])
@@ -171,7 +171,7 @@ def list_stores(ctx: StoreContext = Depends(get_store_context)):
 def get_revenue_comparison(period: str = 'month', store_ids: str = None, ctx: StoreContext = Depends(get_store_context)):
     db = SessionLocal()
     try:
-        from ..models.session import PlaySession, SessionOrderItem
+        from database.models.session import PlaySession, SessionOrderItem
         from datetime import datetime, timedelta
         from collections import defaultdict
 
@@ -227,7 +227,7 @@ def get_revenue_comparison(period: str = 'month', store_ids: str = None, ctx: St
             live_play_fee = 0
             if s.start_time:
                 elapsed_minutes = (now - s.start_time).total_seconds() / 60
-                table = db.query(BilliardTable).filter(BilliardTable.id == s.table_id).first()
+                table = db.query(BilliardTable).filter(BilliardTable.deleted_at == None).filter(BilliardTable.id == s.table_id).first()
                 if table and table.price_per_hour:
                     live_play_fee = (elapsed_minutes / 60) * table.price_per_hour
             # Cộng tiền dịch vụ đã order
@@ -274,7 +274,7 @@ def get_revenue_comparison(period: str = 'month', store_ids: str = None, ctx: St
 def get_hq_overview(ctx: StoreContext = Depends(get_store_context)):
     db = SessionLocal()
     try:
-        from ..models.session import PlaySession, SessionOrderItem
+        from database.models.session import PlaySession, SessionOrderItem
         from datetime import datetime, timedelta
         from sqlalchemy import or_, and_
 
@@ -331,7 +331,7 @@ def get_hq_overview(ctx: StoreContext = Depends(get_store_context)):
         from services.store_service import StoreService
         stores = StoreService.get_all_stores(db)
         total_stores = len(stores)
-        all_tables = db.query(BilliardTable).all()
+        all_tables = db.query(BilliardTable).filter(BilliardTable.deleted_at == None).all()
         total_tables = len(all_tables)
         playing_tables = sum(1 for t in all_tables if t.current_status == 'PLAYING')
 
@@ -385,7 +385,7 @@ def get_store_revenue_report(
 ):
     db = SessionLocal()
     try:
-        from ..models.session import PlaySession, SessionOrderItem
+        from database.models.session import PlaySession, SessionOrderItem
         from datetime import datetime, timedelta
 
         target_store_id = store_id if (ctx.role.value == 'SUPER_ADMIN' and store_id) else ctx.store_id
@@ -440,7 +440,7 @@ def get_store_revenue_report(
         session_list = []
 
         for s in sessions:
-            table = db.query(BilliardTable).filter(BilliardTable.id == s.table_id).first()
+            table = db.query(BilliardTable).filter(BilliardTable.deleted_at == None).filter(BilliardTable.id == s.table_id).first()
             table_name = table.name if table else f"Bàn {s.table_id}"
             
             items = db.query(SessionOrderItem).filter(SessionOrderItem.session_id == s.id).all()

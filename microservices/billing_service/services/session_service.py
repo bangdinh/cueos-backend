@@ -10,7 +10,7 @@ class SessionService:
         """
         Mở bàn và bắt đầu một phiên chơi mới.
         """
-        table = db.query(BilliardTable).filter(BilliardTable.id == table_id).first()
+        table = db.query(BilliardTable).filter(BilliardTable.deleted_at == None).filter(BilliardTable.id == table_id).first()
         if not table:
             raise ValueError("Không tìm thấy bàn")
         if table.current_status == "PLAYING":
@@ -27,7 +27,7 @@ class SessionService:
         """
         Tính tiền và kết thúc phiên chơi.
         """
-        table = db.query(BilliardTable).filter(BilliardTable.id == table_id).first()
+        table = db.query(BilliardTable).filter(BilliardTable.deleted_at == None).filter(BilliardTable.id == table_id).first()
         if not table:
             raise ValueError("Không tìm thấy bàn")
         if table.current_status != "PLAYING":
@@ -95,7 +95,7 @@ class SessionService:
         
         result = []
         for s in sessions:
-            table = db.query(BilliardTable).filter(BilliardTable.id == s.table_id).first()
+            table = db.query(BilliardTable).filter(BilliardTable.deleted_at == None).filter(BilliardTable.id == s.table_id).first()
             items = db.query(SessionOrderItem).filter(SessionOrderItem.session_id == s.id).all()
             
             service_total = sum(i.total_price for i in items)

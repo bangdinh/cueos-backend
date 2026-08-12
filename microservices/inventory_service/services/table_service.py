@@ -6,12 +6,12 @@ class TableService:
     @staticmethod
     def get_tables(db: Session, store_id: int):
         """Lấy danh sách các bàn của chi nhánh."""
-        return db.query(BilliardTable).filter(BilliardTable.store_id == store_id).all()
+        return db.query(BilliardTable).filter(BilliardTable.deleted_at == None).filter(BilliardTable.store_id == store_id).all()
         
     @staticmethod
     def get_table_by_id(db: Session, table_id: int):
         """Lấy thông tin chi tiết của một bàn cụ thể."""
-        return db.query(BilliardTable).filter(BilliardTable.id == table_id).first()
+        return db.query(BilliardTable).filter(BilliardTable.deleted_at == None).filter(BilliardTable.id == table_id).first()
 
     @staticmethod
     def update_table_status(db: Session, table_id: int, status: str):
@@ -30,8 +30,8 @@ class TableService:
         if from_table_id == to_table_id:
             raise ValueError("Không thể chuyển sang cùng bàn!")
             
-        from_table = db.query(BilliardTable).filter(BilliardTable.id == from_table_id).first()
-        to_table = db.query(BilliardTable).filter(BilliardTable.id == to_table_id).first()
+        from_table = db.query(BilliardTable).filter(BilliardTable.deleted_at == None).filter(BilliardTable.id == from_table_id).first()
+        to_table = db.query(BilliardTable).filter(BilliardTable.deleted_at == None).filter(BilliardTable.id == to_table_id).first()
         
         if not from_table or not to_table:
             raise ValueError("Bàn không tồn tại!")
