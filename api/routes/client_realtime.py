@@ -55,14 +55,44 @@ def poll_client(table_id: int):
         return JSONResponse({"has_message": True, "data": data})
     return JSONResponse({"has_message": False})
 
+from api.middleware.store_context import StoreContext, get_store_context
+from fastapi import Depends
+
 @router.get("/poll")
-def poll_events():
+def poll_events(ctx: StoreContext = Depends(get_store_context)):
     try:
         if websocket_manager.latest_payload and websocket_manager.latest_payload != "{}":
             data = json.loads(websocket_manager.latest_payload)
             events = [data] if data else []
         else:
             events = []
+            
+        if not ctx.is_hq and events:
+            # Lọc event theo store_id
+            events = [e for e in events if e.get("store_id") == ctx.store_id]
     except Exception:
         events = []
     return JSONResponse({"status": "ok", "events": events})
+
+from database.models import StaffNotification
+from fastapi import HTTPException
+from database.database import SessionLocal
+
+@router.post("/notifications/{notif_id}/resolve")
+def resolve_notification(notif_id: int, ctx: StoreContext = Depends(get_store_context)):
+    if ctx.is_hq:
+        raise HTTPException(status_code=403, detail="Máy Mẹ (HQ) chỉ có quyền đọc")
+    
+    db = SessionLocal()
+    try:
+        notif = db.query(StaffNotification).filter(StaffNotification.id == notif_id).first()
+        if not notif:
+            raise HTTPException(status_code=404, detail="Notification not found")
+        if notif.store_id != ctx.store_id:
+            raise HTTPException(status_code=403, detail="Không có quyền truy cập cửa hàng này")
+            
+        notif.status = "RESOLVED"
+        db.commit()
+        return {"status": "ok"}
+    finally:
+        db.close()

@@ -39,11 +39,65 @@ class StoreContext:
         if self.role != UserRole.ADMIN:
             raise HTTPException(status_code=403, detail="Chỉ ADMIN của chi nhánh mới có quyền thực hiện hành động này.")
 
-def get_store_context(
-    request: Request,
-    auth_credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
-    authorization: Optional[str] = Header(None, alias="Authorization")
-) -> StoreContext:
+def get_store_context(request: Request) -> StoreContext:
+    """
+    Lấy context từ headers (được API Gateway hoặc Auth Service validate).
+    """
+    user_id_str = request.headers.get("X-User-Id")
+    role = request.headers.get("X-User-Role")
+    target_store_str = request.headers.get("X-Target-Store")
+    owned_stores_str = request.headers.get("X-Owned-Stores", "")
+    
+    if not user_id_str or not role:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing authentication headers"
+        )
+        
+    user_id = int(user_id_str)
+    
+    if role == UserRole.SUPER_ADMIN.value:
+        return StoreContext(
+            user_id=user_id,
+            role=role,
+            store_id=None
+        )
+        
+    if not target_store_str:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Missing X-Target-Store header for non-HQ user"
+        )
+        
+    target_store_id = int(target_store_str)
+    
+    if role == UserRole.OWNER.value:
+        owned_ids = []
+        if owned_stores_str:
+            try:
+                owned_ids = [int(x.strip()) for x in owned_stores_str.split(',') if x.strip()]
+            except ValueError:
+                pass
+        if target_store_id not in owned_ids:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Owner does not have access to store {target_store_id}"
+            )
+    else:
+        auth_store_str = request.headers.get("X-Store-Id")
+        if not auth_store_str or int(auth_store_str) != target_store_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Cross-store access denied"
+            )
+            
+    return StoreContext(
+        user_id=user_id,
+        role=role,
+        store_id=target_store_id
+    )
+
+
     token = None
     if auth_credentials and auth_credentials.credentials:
         token = auth_credentials.credentials

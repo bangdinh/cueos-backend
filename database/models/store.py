@@ -1,8 +1,9 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, ForeignKey
 from database.models.base import Base
 
 class StoreModel(Base):
     __tablename__ = "stores"
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
     
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), nullable=False, index=True)

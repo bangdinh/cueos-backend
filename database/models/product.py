@@ -1,6 +1,7 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
 from database.models.base import Base
+from datetime import datetime
 
 class Product(Base):
     __tablename__ = "products"
@@ -12,5 +13,6 @@ class Product(Base):
     stock = Column(Integer, default=0)
     category = Column(String(50))
     image_url = Column(String(255), default="")
+    deleted_at = Column(DateTime, nullable=True)
     
     order_items = relationship("SessionOrderItem", back_populates="product")

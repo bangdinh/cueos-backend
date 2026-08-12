@@ -15,7 +15,10 @@ db_host = os.getenv("DB_HOST", "127.0.0.1")
 db_port = os.getenv("DB_PORT", "5432")
 db_name = os.getenv("DB_NAME", "bida_db")
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///./bida_ai.db"
+if os.getenv("TESTING") == "1" or os.getenv("PYTEST_CURRENT_TEST"):
+    SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
+else:
+    SQLALCHEMY_DATABASE_URL = "sqlite:///./bida_ai.db"
 connect_args = {"check_same_thread": False}
 
 if db_type == "postgresql":

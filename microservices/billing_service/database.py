@@ -1,12 +1,13 @@
 import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from .models.base import Base
+from database.models.base import Base
 
 # Import models to ensure they are registered with Base before init_db
-from .models.session import PlaySession, SessionOrderItem
-from .models.customer import CustomerModel
-from .models.notification import StaffNotification
+from database.models.session import PlaySession, SessionOrderItem
+from database.models.customer import CustomerModel
+from database.models.notification import StaffNotification
+from database.models.store import StoreModel
 
 SQLALCHEMY_DATABASE_URL = "sqlite:///./billing.db"
 connect_args = {"check_same_thread": False}
@@ -22,4 +23,13 @@ def get_db():
         db.close()
 
 def init_db():
-    Base.metadata.create_all(bind=engine)
+    Base.metadata.create_all(
+        bind=engine,
+        tables=[
+            PlaySession.__table__,
+            SessionOrderItem.__table__,
+            CustomerModel.__table__,
+            StaffNotification.__table__,
+            StoreModel.__table__
+        ]
+    )

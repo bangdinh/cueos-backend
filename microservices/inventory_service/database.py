@@ -1,10 +1,11 @@
 import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from .models.base import Base
+from database.models.base import Base
 # Import models to ensure they are registered with Base before init_db
-from .models.product import Product
-from .models.billiard_table import BilliardTable
+from database.models.product import Product
+from database.models.billiard_table import BilliardTable
+from database.models.store import StoreModel
 
 SQLALCHEMY_DATABASE_URL = "sqlite:///./inventory.db"
 connect_args = {"check_same_thread": False}
@@ -20,4 +21,11 @@ def get_db():
         db.close()
 
 def init_db():
-    Base.metadata.create_all(bind=engine)
+    Base.metadata.create_all(
+        bind=engine,
+        tables=[
+            Product.__table__,
+            BilliardTable.__table__,
+            StoreModel.__table__
+        ]
+    )

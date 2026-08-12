@@ -12,6 +12,10 @@ class StoreContext:
         self.role = role
         self.user_id = user_id
         
+    @property
+    def is_hq(self) -> bool:
+        return self.role == UserRole.SUPER_ADMIN
+        
     def require_write_permission(self):
         """Kiểm tra quyền ghi, nếu là Trụ sở (HQ) sẽ từ chối 403."""
         if self.role == UserRole.SUPER_ADMIN:

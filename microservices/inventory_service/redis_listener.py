@@ -4,7 +4,7 @@ import redis
 import threading
 import time
 from .database import SessionLocal
-from .models.product import Product
+from database.models.product import Product
 
 def start_redis_listener_thread():
     def listener():
@@ -57,7 +57,7 @@ def start_redis_listener_thread():
                                                     item_name = item.get("name")
                                                     qty = item.get("quantity", 0)
                                                     
-                                                    product = db.query(Product).filter(
+                                                    product = db.query(Product).filter(Product.deleted_at == None).filter(
                                                         Product.name == item_name, 
                                                         Product.store_id == store_id
                                                     ).first()

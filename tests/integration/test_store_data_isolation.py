@@ -4,14 +4,18 @@ from sqlalchemy.orm import sessionmaker
 from database.models import Base, BilliardTable, Product, PlaySession, AIEvent
 import database.crud as crud
 
+from sqlalchemy.pool import StaticPool
+
 # Chuẩn bị SQLite in-memory cho testing
-engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
+engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False}, poolclass=StaticPool)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 @pytest.fixture(scope="function")
 def db_session():
     Base.metadata.create_all(bind=engine)
     db = TestingSessionLocal()
+    from database.seed import seed_default_store_and_users
+    seed_default_store_and_users(db)
     try:
         yield db
     finally:
@@ -30,7 +34,8 @@ class TestStoreDataIsolationCRUDTDD:
         # 1. Tạo 2 store
         store1 = StoreModel(id=1, name="Quán Quận 1")
         store2 = StoreModel(id=2, name="Quán Quận 7")
-        db_session.add_all([store1, store2])
+        db_session.merge(store1)
+        db_session.merge(store2)
         db_session.commit()
         
         # 2. Thêm bàn vào store 1 và store 2
@@ -61,7 +66,8 @@ class TestStoreDataIsolationCRUDTDD:
         
         store1 = StoreModel(id=1, name="Quán Quận 1")
         store2 = StoreModel(id=2, name="Quán Quận 7")
-        db_session.add_all([store1, store2])
+        db_session.merge(store1)
+        db_session.merge(store2)
         db_session.commit()
         
         # Thêm product vào store 1 và store 2
@@ -100,6 +106,16 @@ class TestStoreDataIsolationCRUDTDD:
         from main import app
         from database.database import init_db
         from api.auth import create_access_token
+        from database.database import get_db
+
+        def override_get_db():
+            db = TestingSessionLocal()
+            try:
+                yield db
+            finally:
+                db.close()
+                
+        app.dependency_overrides[get_db] = override_get_db
         init_db()
         
         token_hq = create_access_token({"user_id": 1, "role": "SUPER_ADMIN", "store_id": None})
@@ -162,6 +178,16 @@ class TestStoreDataIsolationCRUDTDD:
     def test_poll_endpoint_store_isolation_and_admin_login(self, db_session):
         from fastapi.testclient import TestClient
         from main import app
+        from database.database import get_db
+
+        def override_get_db():
+            db = TestingSessionLocal()
+            try:
+                yield db
+            finally:
+                db.close()
+                
+        app.dependency_overrides[get_db] = override_get_db
         with TestClient(app) as client:
             # 1. Test đăng nhập admin với whitespace và case-insensitive
             r_admin = client.post("/api/auth/login", json={"username": " ADMIN ", "password": " secret "})
@@ -194,3 +220,5 @@ class TestStoreDataIsolationCRUDTDD:
             r_poll_hq = client.get("/api/poll", headers={"Authorization": f"Bearer {token_admin}"})
             assert r_poll_hq.status_code == 200
             assert len(r_poll_hq.json()["events"]) == 1
+
+        app.dependency_overrides.clear()

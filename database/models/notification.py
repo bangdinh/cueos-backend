@@ -16,6 +16,7 @@ class AIEvent(Base):
     event_type = Column(String(100), index=True) # TABLE_ACTIVE, TABLE_EMPTY, HAND_RAISED
     confidence_score = Column(Float)
     created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 class StaffNotification(Base):
     __tablename__ = "staff_notifications"
@@ -26,3 +27,4 @@ class StaffNotification(Base):
     notification_type = Column(String(100))
     status = Column(String(50), default=NotificationStatus.PENDING.value)
     created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

@@ -9,8 +9,8 @@ from fastapi.responses import JSONResponse
 import redis as redis_lib
 
 from ..database import SessionLocal
-from ..models.session import PlaySession
-from ..models.billiard_table import BilliardTable
+from database.models.session import PlaySession
+from database.models.billiard_table import BilliardTable
 
 # Token generator helper
 import hashlib
@@ -44,7 +44,7 @@ router = APIRouter(prefix="/api", tags=["Sessions"])
 def get_active_session(table_id: int):
     db = SessionLocal()
     try:
-        table = db.query(BilliardTable).filter(BilliardTable.id == table_id).first()
+        table = db.query(BilliardTable).filter(BilliardTable.deleted_at == None).filter(BilliardTable.id == table_id).first()
         if not table or table.current_status != "PLAYING":
             return JSONResponse({"status": "error"}, status_code=404)
             
@@ -60,7 +60,7 @@ def start_session(table_id: int, ctx: StoreContext = Depends(get_store_context))
     ctx.require_write_permission()
     db = SessionLocal()
     try:
-        table = db.query(BilliardTable).filter(BilliardTable.id == table_id).first()
+        table = db.query(BilliardTable).filter(BilliardTable.deleted_at == None).filter(BilliardTable.id == table_id).first()
         if not table:
             return JSONResponse({"status": "error", "message": "Khong tim thay ban"}, status_code=404)
         if table.current_status == "PLAYING":
@@ -85,7 +85,7 @@ def stop_session(table_id: int, ctx: StoreContext = Depends(get_store_context)):
     ctx.require_write_permission()
     db = SessionLocal()
     try:
-        table = db.query(BilliardTable).filter(BilliardTable.id == table_id).first()
+        table = db.query(BilliardTable).filter(BilliardTable.deleted_at == None).filter(BilliardTable.id == table_id).first()
         if not table:
             return JSONResponse({"status": "error", "message": "Khong tim thay ban"}, status_code=404)
         if table.current_status != "PLAYING":
@@ -164,8 +164,8 @@ def transfer_session(from_table_id: int, to_table_id: int, ctx: StoreContext = D
         if from_table_id == to_table_id:
             return JSONResponse({"status": "error", "message": "Không thể chuyển sang cùng bàn!"}, status_code=400)
             
-        from_table = db.query(BilliardTable).filter(BilliardTable.id == from_table_id).first()
-        to_table = db.query(BilliardTable).filter(BilliardTable.id == to_table_id).first()
+        from_table = db.query(BilliardTable).filter(BilliardTable.deleted_at == None).filter(BilliardTable.id == from_table_id).first()
+        to_table = db.query(BilliardTable).filter(BilliardTable.deleted_at == None).filter(BilliardTable.id == to_table_id).first()
         
         if not from_table or not to_table:
             return JSONResponse({"status": "error", "message": "Bàn không tồn tại!"}, status_code=404)
@@ -235,7 +235,7 @@ def get_history(store_id: int = None, ctx: StoreContext = Depends(get_store_cont
         
         result = []
         for s in sessions:
-            table = db.query(BilliardTable).filter(BilliardTable.id == s.table_id).first()
+            table = db.query(BilliardTable).filter(BilliardTable.deleted_at == None).filter(BilliardTable.id == s.table_id).first()
             
             # In a real microservice, we would batch fetch this or store a snapshot in Session Service.
             # For now, we skip fetching items in history list to avoid N+1 queries to Order Service,

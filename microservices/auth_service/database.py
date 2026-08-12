@@ -1,10 +1,10 @@
 import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from .models.base import Base
+from database.models.base import Base
 # Import models to ensure they are registered with Base before init_db
-from .models.user import UserModel
-from .models.store import StoreModel
+from database.models.user import UserModel
+from database.models.store import StoreModel
 
 SQLALCHEMY_DATABASE_URL = "sqlite:///./auth.db"
 connect_args = {"check_same_thread": False}
@@ -20,4 +20,10 @@ def get_db():
         db.close()
 
 def init_db():
-    Base.metadata.create_all(bind=engine)
+    Base.metadata.create_all(
+        bind=engine,
+        tables=[
+            UserModel.__table__,
+            StoreModel.__table__
+        ]
+    )

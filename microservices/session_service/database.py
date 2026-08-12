@@ -1,11 +1,12 @@
 import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from .models.base import Base
+from database.models.base import Base
 
-# Import models to ensure they are registered with Base
-from .models.session import PlaySession
-from .models.billiard_table import BilliardTable
+from database.models.session import PlaySession
+from database.models.billiard_table import BilliardTable
+from database.models.notification import AIEvent
+from database.models.store import StoreModel
 
 import os
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -23,4 +24,12 @@ def get_db():
         db.close()
 
 def init_db():
-    Base.metadata.create_all(bind=engine)
+    Base.metadata.create_all(
+        bind=engine,
+        tables=[
+            PlaySession.__table__,
+            BilliardTable.__table__,
+            AIEvent.__table__,
+            StoreModel.__table__
+        ]
+    )

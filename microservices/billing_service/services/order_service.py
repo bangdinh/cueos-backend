@@ -1,7 +1,7 @@
 import os
 import time
 from sqlalchemy.orm import Session
-from ..models.session import SessionOrderItem, PlaySession
+from database.models.session import SessionOrderItem, PlaySession
 from .notification_service import NotificationService
 from typing import List, Dict, Any
 import httpx

@@ -12,8 +12,8 @@ from fastapi import Depends
 from fastapi.responses import JSONResponse, StreamingResponse, FileResponse
 import redis as redis_lib
 from ..database import SessionLocal
-from ..models.billiard_table import BilliardTable
-from ..models.product import Product
+from database.models.billiard_table import BilliardTable
+from database.models.product import Product
 # WS disabled
 
 # Token generator helper
@@ -33,9 +33,9 @@ def list_tables(store_id: int = None, ctx: StoreContext = Depends(get_store_cont
     try:
         target = store_id if (ctx.role.value == 'SUPER_ADMIN' and store_id) else ctx.store_id
         if target:
-            tables = db.query(BilliardTable).filter(BilliardTable.store_id == target).order_by(BilliardTable.id).all()
+            tables = db.query(BilliardTable).filter(BilliardTable.deleted_at == None).filter(BilliardTable.store_id == target).order_by(BilliardTable.id).all()
         else:
-            tables = db.query(BilliardTable).order_by(BilliardTable.id).all()
+            tables = db.query(BilliardTable).filter(BilliardTable.deleted_at == None).order_by(BilliardTable.id).all()
         
         result = []
         for t in tables:
@@ -125,7 +125,7 @@ def admin_update_table(payload: dict, ctx: StoreContext = Depends(get_store_cont
         
     db = SessionLocal()
     try:
-        table = db.query(BilliardTable).filter(BilliardTable.id == table_id, BilliardTable.store_id == ctx.store_id).first() if ctx.role.value != 'SUPER_ADMIN' else db.query(BilliardTable).filter(BilliardTable.id == table_id).first()
+        table = db.query(BilliardTable).filter(BilliardTable.deleted_at == None).filter(BilliardTable.id == table_id, BilliardTable.store_id == ctx.store_id).first() if ctx.role.value != 'SUPER_ADMIN' else db.query(BilliardTable).filter(BilliardTable.deleted_at == None).filter(BilliardTable.id == table_id).first()
         if not table:
             return JSONResponse({"status": "error", "message": "Khong tim thay ban"}, status_code=404)
             
@@ -142,19 +142,19 @@ def admin_update_table(payload: dict, ctx: StoreContext = Depends(get_store_cont
         db.close()
 
 @router.delete("/admin/tables/{table_id}")
-def admin_delete_table(table_id: int, ctx: StoreContext = Depends(get_store_context)):
-    ctx.require_admin_permission()
+def delete_table(table_id: int, ctx: StoreContext = Depends(require_write_permission)):
     db = SessionLocal()
     try:
-        table = db.query(BilliardTable).filter(BilliardTable.id == table_id, BilliardTable.store_id == ctx.store_id).first() if ctx.role.value != 'SUPER_ADMIN' else db.query(BilliardTable).filter(BilliardTable.id == table_id).first()
+        table = db.query(BilliardTable).filter(BilliardTable.deleted_at == None).filter(BilliardTable.id == table_id, BilliardTable.store_id == ctx.store_id, BilliardTable.deleted_at == None).first()
         if not table:
-            return JSONResponse({"status": "error", "message": "Khong tim thay ban"}, status_code=404)
-        if table.current_status == "PLAYING":
-            return JSONResponse({"status": "error", "message": "Khong the xoa ban dang co khach choi!"}, status_code=400)
+            return JSONResponse({"status": "error", "message": "Table not found"}, status_code=404)
             
-        db.delete(table)
+        if table.current_status != TableStatus.EMPTY.value:
+            return JSONResponse({"status": "error", "message": "Cannot delete table that is playing"}, status_code=400)
+            
+        table.deleted_at = datetime.utcnow()
         db.commit()
-        return JSONResponse({"status": "ok", "message": "Da xoa ban"})
+        return JSONResponse({"status": "success", "message": f"Deleted table {table.name}"})
     except Exception as e:
         return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
     finally:
@@ -164,7 +164,7 @@ def admin_delete_table(table_id: int, ctx: StoreContext = Depends(get_store_cont
 def get_table_info(table_id: int):
     db = SessionLocal()
     try:
-        table = db.query(BilliardTable).filter(BilliardTable.id == table_id).first()
+        table = db.query(BilliardTable).filter(BilliardTable.deleted_at == None).filter(BilliardTable.id == table_id).first()
         if not table:
             return JSONResponse({"status": "error", "message": "Không tìm thấy bàn"}, status_code=404)
         return {"id": table.id, "name": table.name, "store_id": table.store_id, "current_status": table.current_status}

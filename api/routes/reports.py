@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse, StreamingResponse, FileResponse
 import redis as redis_lib
 from database.database import SessionLocal
 from api.middleware.store_context import StoreContext, get_store_context
-from fastapi import Depends
+from fastapi import Depends, HTTPException
 from database.models import BilliardTable, PlaySession, SessionOrderItem, Product
 from api.websocket_server import websocket_manager
 
@@ -27,7 +27,10 @@ client_messages_store = {}
 router = APIRouter(prefix="/api", tags=["Reports & Media"])
 
 @router.get("/reports/revenue")
-def get_revenue_report(start_date: str = None, end_date: str = None, store_id: int = None):
+def get_revenue_report(start_date: str = None, end_date: str = None, store_id: int = None, ctx: StoreContext = Depends(get_store_context)):
+    if not ctx.is_hq:
+        store_id = ctx.store_id
+        
     db = SessionLocal()
     try:
         query = db.query(PlaySession).filter(PlaySession.status == "COMPLETED")
@@ -168,6 +171,8 @@ def list_stores(ctx: StoreContext = Depends(get_store_context)):
 
 @router.get('/hq/revenue-comparison')
 def get_revenue_comparison(period: str = 'month', store_ids: str = None, ctx: StoreContext = Depends(get_store_context)):
+    if not ctx.is_hq:
+        raise HTTPException(status_code=403, detail="Chỉ có Máy Mẹ (HQ) mới được xem báo cáo này")
     db = SessionLocal()
     try:
         from database.models import PlaySession, StoreModel, BilliardTable, SessionOrderItem
