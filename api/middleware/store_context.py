@@ -22,11 +22,11 @@ class StoreContext:
             raise HTTPException(status_code=403, detail="Máy Mẹ (HQ) chỉ có quyền đọc dữ liệu, không được phép ghi/sửa dữ liệu nghiệp vụ.")
 
     def require_admin_permission(self):
-        """Kiểm tra quyền quản lý. Chỉ ADMIN mới được thực hiện. MANAGER và SUPER_ADMIN đều bị từ chối."""
+        """Kiểm tra quyền quản lý. Chỉ OWNER mới được thực hiện. MANAGER và SUPER_ADMIN đều bị từ chối."""
         if self.role == UserRole.SUPER_ADMIN:
             raise HTTPException(status_code=403, detail="Máy Mẹ (HQ) chỉ có quyền đọc dữ liệu.")
-        if self.role != UserRole.ADMIN:
-            raise HTTPException(status_code=403, detail="Chỉ ADMIN của chi nhánh mới có quyền thực hiện hành động này.")
+        if self.role != UserRole.OWNER:
+            raise HTTPException(status_code=403, detail="Chỉ OWNER của chi nhánh mới có quyền thực hiện hành động này.")
 
 def get_store_context(
     request: Request,
@@ -50,6 +50,13 @@ def get_store_context(
         )
     
     payload = verify_token(token)
+    
+    force_password_change = payload.get("force_password_change", False)
+    if force_password_change and request.url.path != "/api/auth/change-password":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Vui lòng đổi mật khẩu trước khi tiếp tục."
+        )
     
     role_str = str(payload.get("role", "MANAGER")).upper()
     try:

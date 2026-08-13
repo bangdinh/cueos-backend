@@ -119,7 +119,7 @@ class TestStoreDataIsolationCRUDTDD:
         init_db()
         
         token_hq = create_access_token({"user_id": 1, "role": "SUPER_ADMIN", "store_id": None})
-        token_s1 = create_access_token({"user_id": 2, "role": "STORE_MANAGER", "store_id": 1})
+        token_s1 = create_access_token({"user_id": 2, "role": "MANAGER", "store_id": 1})
         
         with TestClient(app) as client:
             # 1. Trụ sở Máy Mẹ (SUPER_ADMIN) cố tình gọi API tạo bàn -> Bị từ chối 403 Forbidden

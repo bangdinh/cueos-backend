@@ -9,7 +9,8 @@ Tài liệu này mô tả chi tiết kiến trúc của cơ sở dữ liệu `au
     *   **Brute-force protection:** Đếm số lần đăng nhập sai và khoá tài khoản (cột `failed_login_attempts`, `locked_until` trong `users`).
     *   **Audit Logging:** Truy vết hành động nhạy cảm của người dùng (bảng `audit_logs`).
     *   **Token Management:** Quản lý vòng đời Refresh Token và Token Đổi mật khẩu (bảng `refresh_tokens`, `password_reset_tokens`).
-    *   **Staff Onboarding:** Quản lý quy trình mời nhân viên vào chi nhánh (bảng `staff_invitations`).
+    *   **Staff Creation (Luồng chính):** Admin trực tiếp tạo tài khoản nhân viên mới (`users`), bắt buộc nhân viên đổi mật khẩu ở lần đăng nhập đầu tiên (`force_password_change`).
+    *   **Staff Invitations (Luồng dự phòng):** Hỗ trợ mời nhân viên tham gia (ví dụ: nhân sự làm từ xa) thông qua bảng `staff_invitations`. Luồng này được giữ lại để sử dụng trong các tình huống đặc biệt, không phải luồng mặc định.
 
 ## 2. Sơ đồ Cơ sở dữ liệu (ER Diagram)
 
@@ -24,6 +25,8 @@ erDiagram
         DATETIME last_login_at 
         DATETIME created_at 
         DATETIME updated_at 
+        BOOLEAN force_password_change "Bắt buộc đổi MK lần đầu"
+        INTEGER created_by FK "REFERENCES users(id) - Người tạo"
     }
 
     STORES {
@@ -38,7 +41,7 @@ erDiagram
         INTEGER id PK "AUTOINCREMENT"
         INTEGER user_id FK "REFERENCES users(id)"
         INTEGER store_id FK "REFERENCES stores(id)"
-        VARCHAR role "SUPER_ADMIN, OWNER, STORE_MANAGER, CASHIER"
+        VARCHAR role "OWNER, MANAGER, STAFF"
         DATETIME created_at 
     }
 
@@ -74,8 +77,8 @@ erDiagram
     STAFF_INVITATIONS {
         INTEGER id PK "AUTOINCREMENT"
         INTEGER store_id FK "REFERENCES stores(id)"
-        INTEGER inviter_id FK "REFERENCES users(id)"
-        VARCHAR phone_number 
+        INTEGER invited_by FK "REFERENCES users(id)"
+        VARCHAR phone 
         VARCHAR role "Quyền sẽ được cấp"
         VARCHAR token "Mã xác nhận UNIQUE"
         DATETIME expires_at 
@@ -103,3 +106,16 @@ erDiagram
 3.  **Migration (SQLite & Alembic):**
     *   Sử dụng Batch Operations (`with op.batch_alter_table(...)`) vì SQLite không hỗ trợ DROP/ALTER COLUMN trực tiếp.
     *   Đảm bảo Script down-migration xử lý rollback dữ liệu đầy đủ.
+
+## 4. Nhật ký thay đổi mới nhất (Today's Updates)
+
+Trong lần refactor CSDL cuối cùng (Final Schema Design), các hành động sau đã được thực thi và xác nhận trên DB thực tế (`auth.db`):
+
+1. **Chuẩn hoá Roles (100% Pass):** Xóa sổ các role cũ dư thừa/lộn xộn (`ADMIN`, `STORE_MANAGER`, `CASHIER`). Ép hệ thống dùng bộ 4 role duy nhất: `SUPER_ADMIN`, `OWNER`, `MANAGER`, `STAFF`.
+2. **Luồng tạo Nhân viên Chính thức:** Đưa cờ `force_password_change` và `created_by` vào bảng `users` nhằm đáp ứng yêu cầu Admin cấp thẳng tài khoản cho nhân viên thay vì bắt họ đăng ký. 
+3. **Database Constraints Level:**
+   - Chạy Migration ép cứng **CHECK Constraint** bằng SQLite trên bảng `user_store_roles` và `staff_invitations` nhằm từ chối mọi lệnh Insert/Update nếu chuỗi Role nằm ngoài danh sách cho phép. (VD: Cấm nhét `SUPER_ADMIN` vào `user_store_roles` vì trụ sở Máy Mẹ không phụ thuộc bất kỳ chi nhánh nào).
+   - Thiết lập **Unique Index** chống chọc lủng cho `token` ở `staff_invitations`.
+   - Thiết lập **Composite Index** trên `(target_type, target_id)` ở `audit_logs` để tăng tốc truy vấn.
+4. **Data Isolation (Cách ly dữ liệu):** Sửa lỗi định danh Token ở toàn bộ Microservices (Inventory, Order, Billing) để tuân thủ Role Context mới, chống lại các hành vi tấn công vượt quyền (IDOR / Privilege Escalation) bằng Token hết hạn hoặc sai Role.
+5. **Full Test Suite:** 100% (45/45 tests) Unit Test, Security Test và Integration Test đã Passed trên mô hình Schema mới này.

@@ -9,7 +9,7 @@ class TestJWTAuthTDD:
         """Test tạo và xác thực token JWT hợp lệ với đầy đủ payload."""
         from api.auth import create_access_token, verify_token
         
-        payload = {"user_id": 10, "store_id": 1, "role": "STORE_MANAGER"}
+        payload = {"user_id": 10, "store_id": 1, "role": "MANAGER"}
         token = create_access_token(payload, expires_delta=timedelta(hours=1))
         
         assert isinstance(token, str)
@@ -18,14 +18,14 @@ class TestJWTAuthTDD:
         decoded = verify_token(token)
         assert decoded["user_id"] == 10
         assert decoded["store_id"] == 1
-        assert decoded["role"] == "STORE_MANAGER"
+        assert decoded["role"] == "MANAGER"
         assert "exp" in decoded
 
     def test_expired_token_raises_exception(self):
         """Test token hết hạn phải bị từ chối khi xác thực."""
         from api.auth import create_access_token, verify_token
         
-        payload = {"user_id": 10, "store_id": 1, "role": "STORE_MANAGER"}
+        payload = {"user_id": 10, "store_id": 1, "role": "MANAGER"}
         # Tạo token đã hết hạn 1 giây trước
         token = create_access_token(payload, expires_delta=timedelta(seconds=-1))
         
@@ -38,7 +38,7 @@ class TestJWTAuthTDD:
         """Test token bị sửa đổi hoặc ký sai chữ ký phải bị từ chối."""
         from api.auth import create_access_token, verify_token
         
-        payload = {"user_id": 10, "store_id": 1, "role": "STORE_MANAGER"}
+        payload = {"user_id": 10, "store_id": 1, "role": "MANAGER"}
         token = create_access_token(payload, expires_delta=timedelta(hours=1))
         
         # Giả mạo token bằng cách đổi ký tự cuối

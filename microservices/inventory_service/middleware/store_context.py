@@ -7,8 +7,8 @@ import os
 
 class UserRole(str, enum.Enum):
     SUPER_ADMIN = "SUPER_ADMIN"
-    ADMIN = "OWNER"
-    MANAGER = "STORE_MANAGER"
+    OWNER = "OWNER"
+    MANAGER = "MANAGER"
 
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "BIDA_AI_SECURE_JWT_SECRET_KEY_2026_CHANGE_IN_PROD")
 JWT_ALGORITHM = "HS256"
@@ -34,10 +34,11 @@ class StoreContext:
             raise HTTPException(status_code=403, detail="Máy Mẹ (HQ) chỉ có quyền đọc dữ liệu, không được phép ghi/sửa dữ liệu nghiệp vụ.")
 
     def require_admin_permission(self):
+        """Kiểm tra quyền quản lý. Chỉ OWNER mới được thực hiện. MANAGER và SUPER_ADMIN đều bị từ chối."""
         if self.role == UserRole.SUPER_ADMIN:
             raise HTTPException(status_code=403, detail="Máy Mẹ (HQ) chỉ có quyền đọc dữ liệu.")
         if self.role != UserRole.OWNER:
-            raise HTTPException(status_code=403, detail="Chỉ ADMIN của chi nhánh mới có quyền thực hiện hành động này.")
+            raise HTTPException(status_code=403, detail="Chỉ OWNER của chi nhánh mới có quyền thực hiện hành động này.")
 
 def get_store_context(request: Request) -> StoreContext:
     """
@@ -116,11 +117,11 @@ def get_store_context(request: Request) -> StoreContext:
     
     payload = verify_token_local(token)
     
-    role_str = str(payload.get("role", "STORE_MANAGER")).upper()
+    role_str = str(payload.get("role", "MANAGER")).upper()
     try:
         role = UserRole(role_str)
     except ValueError:
-        role = UserRole.STORE_MANAGER
+        role = UserRole.MANAGER
         
     user_id = payload.get("user_id")
     

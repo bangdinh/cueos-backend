@@ -73,7 +73,7 @@ class StoreContext:
         pass
 
 def get_store_context():
-    return StoreContext(store_id=1, role="STORE_MANAGER")
+    return StoreContext(store_id=1, role="MANAGER")
 
 router = APIRouter(prefix="/api", tags=["Orders"])
 

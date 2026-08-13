@@ -13,14 +13,14 @@ class TestStoreDomainTDD:
     """
 
     def test_role_value_object(self):
-        """Test Role enum có đúng các quyền SUPER_ADMIN, STORE_MANAGER, CASHIER."""
+        """Test Role enum có đúng các quyền SUPER_ADMIN, MANAGER, STAFF."""
         assert Role.SUPER_ADMIN.value == "SUPER_ADMIN"
-        assert Role.STORE_MANAGER.value == "STORE_MANAGER"
-        assert Role.CASHIER.value == "CASHIER"
+        assert Role.MANAGER.value == "MANAGER"
+        assert Role.STAFF.value == "STAFF"
         
         assert Role.SUPER_ADMIN.is_hq() is True
-        assert Role.STORE_MANAGER.is_hq() is False
-        assert Role.CASHIER.is_hq() is False
+        assert Role.MANAGER.is_hq() is False
+        assert Role.STAFF.is_hq() is False
 
     def test_store_aggregate_root_creation(self):
         """Test tạo Store Aggregate Root và kiểm tra trạng thái."""
@@ -39,14 +39,14 @@ class TestStoreDomainTDD:
         assert hq_user.can_access_all_stores() is True
         assert hq_user.can_write_to_store(store_id=1) is False  # HQ CHỈ ĐỌC (Read-Only)
         
-        store_user = User(user_id=2, username="manager_q1", store_roles=[UserStoreRoleEntity(store_id=1, role=Role.STORE_MANAGER)])
+        store_user = User(user_id=2, username="manager_q1", store_roles=[UserStoreRoleEntity(store_id=1, role=Role.MANAGER)])
         assert store_user.can_access_all_stores() is False
         assert store_user.can_write_to_store(store_id=1) is True
         assert store_user.can_write_to_store(store_id=2) is False  # Không được sửa dữ liệu quán khác
         
     def test_user_writing_to_other_store_raises_error(self):
         """Test nếu user quán A cố ghi dữ liệu quán B sẽ ném CrossStoreAccessError."""
-        store_user = User(user_id=2, username="manager_q1", store_roles=[UserStoreRoleEntity(store_id=1, role=Role.STORE_MANAGER)])
+        store_user = User(user_id=2, username="manager_q1", store_roles=[UserStoreRoleEntity(store_id=1, role=Role.MANAGER)])
         with pytest.raises(CrossStoreAccessError) as exc_info:
             store_user.validate_write_access(target_store_id=2)
         assert "Không có quyền truy cập cửa hàng 2" in str(exc_info.value)

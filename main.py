@@ -153,7 +153,7 @@ async def websocket_endpoint(websocket: WebSocket, token: Optional[str] = None):
         
     try:
         payload = verify_token(jwt_str)
-        role_str = str(payload.get("role", "STORE_MANAGER")).upper()
+        role_str = str(payload.get("role", "MANAGER")).upper()
         is_hq = (role_str == UserRole.SUPER_ADMIN.value)
         token_store_id = payload.get("store_id")
         sid = payload.get("sid")

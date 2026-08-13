@@ -14,7 +14,7 @@ class TestTokenStoreMismatchTDD:
         from api.auth import create_access_token
         
         token_store_1 = create_access_token(
-            {"user_id": 2, "store_id": 1, "role": "STORE_MANAGER"},
+            {"user_id": 2, "store_id": 1, "role": "MANAGER"},
             expires_delta=timedelta(hours=1)
         )
         
@@ -35,7 +35,7 @@ class TestTokenStoreMismatchTDD:
         from api.auth import create_access_token
         
         token_cashier_1 = create_access_token(
-            {"user_id": 3, "store_id": 1, "role": "CASHIER"},
+            {"user_id": 3, "store_id": 1, "role": "STAFF"},
             expires_delta=timedelta(hours=1)
         )
         
