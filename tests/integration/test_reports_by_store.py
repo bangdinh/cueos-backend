@@ -44,9 +44,9 @@ class TestReportsByStoreTDD:
             assert "T1" not in content
 
     def test_store_manager_forced_to_own_store_in_report(self):
-        """STORE_MANAGER của store 1 cố truyền store_id=2 -> vẫn bị ép về store 1."""
+        """MANAGER của store 1 cố truyền store_id=2 -> vẫn bị ép về store 1."""
         with TestClient(app) as client:
-            mgr_token = create_access_token({"user_id": 2, "store_id": 1, "role": "STORE_MANAGER", "username": "mgr1"})
+            mgr_token = create_access_token({"user_id": 2, "store_id": 1, "role": "MANAGER", "username": "mgr1"})
             headers = {"Authorization": f"Bearer {mgr_token}"}
 
             # Cố tình truyền store_id=2

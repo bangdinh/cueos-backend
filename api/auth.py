@@ -104,7 +104,7 @@ def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
     store_roles_payload = [{"store_id": r.store_id, "role": r.role} for r in user_roles]
     
     # Determine the primary role (e.g. SUPER_ADMIN, OWNER, or the first one)
-    primary_role_str = "CASHIER"
+    primary_role_str = "STAFF"
     primary_store_id = None
     
     if user_roles:

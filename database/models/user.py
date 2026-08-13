@@ -1,14 +1,13 @@
 import enum
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, UniqueConstraint
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, UniqueConstraint, Boolean
+from sqlalchemy.orm import validates
 from database.models.base import Base
 from datetime import datetime
 
 class UserRole(str, enum.Enum):
     SUPER_ADMIN = "SUPER_ADMIN"
     OWNER = "OWNER"
-    ADMIN = "ADMIN"
-    STORE_MANAGER = "STORE_MANAGER"
-    CASHIER = "CASHIER"
+    MANAGER = "MANAGER"
     STAFF = "STAFF"
 
 class UserStoreRole(Base):
@@ -25,6 +24,13 @@ class UserStoreRole(Base):
         UniqueConstraint('user_id', 'store_id', name='uq_user_store'),
     )
 
+    @validates('role')
+    def validate_role(self, key, role):
+        allowed_roles = {UserRole.OWNER.value, UserRole.MANAGER.value, UserRole.STAFF.value, UserRole.SUPER_ADMIN.value}
+        if role not in allowed_roles:
+            raise ValueError(f"Invalid role: {role}")
+        return role
+
 class UserModel(Base):
     __tablename__ = "users"
     
@@ -39,3 +45,5 @@ class UserModel(Base):
     failed_login_attempts = Column(Integer, default=0)
     locked_until = Column(DateTime, nullable=True)
     last_login_at = Column(DateTime, nullable=True)
+    force_password_change = Column(Boolean, nullable=False, default=True)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=True)

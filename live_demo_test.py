@@ -30,7 +30,7 @@ print("="*65)
 print("🎯 KIỂM THỬ THỰC TẾ TRỰC TIẾP TRÊN SERVER ĐANG CHẠY (PORT 8888)")
 print("="*65)
 
-# 1. TEST TÀI KHOẢN QUẢN LÝ QUÁN 1 (STORE_MANAGER)
+# 1. TEST TÀI KHOẢN QUẢN LÝ QUÁN 1 (MANAGER)
 print("\n[1] 🏨 ĐĂNG NHẬP TÀI KHOẢN QUẢN LÝ QUÁN 1 (manager1 / secret)...")
 status, res = req("POST", "/api/auth/login", {"username": "manager1", "password": "secret"})
 if status == 200:

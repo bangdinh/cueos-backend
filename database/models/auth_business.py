@@ -1,4 +1,6 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
+from sqlalchemy.orm import validates
+from database.models.user import UserRole
 from database.models.base import Base
 from datetime import datetime
 
@@ -47,3 +49,10 @@ class StaffInvitation(Base):
     expires_at = Column(DateTime, nullable=False)
     accepted_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+    @validates('role')
+    def validate_role(self, key, role):
+        allowed_roles = {UserRole.OWNER.value, UserRole.MANAGER.value, UserRole.STAFF.value}
+        if role not in allowed_roles:
+            raise ValueError(f"Invalid role: {role}")
+        return role

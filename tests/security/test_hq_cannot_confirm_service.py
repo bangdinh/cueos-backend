@@ -37,8 +37,8 @@ class TestHQCannotConfirmServiceTDD:
             assert saved_notif.status == "PENDING"
             db.close()
 
-            # STORE_MANAGER gọi xác nhận phục vụ -> phải thành công (200)
-            mgr_token = create_access_token({"user_id": 2, "store_id": 1, "role": "STORE_MANAGER", "username": "mgr1"})
+            # MANAGER gọi xác nhận phục vụ -> phải thành công (200)
+            mgr_token = create_access_token({"user_id": 2, "store_id": 1, "role": "MANAGER", "username": "mgr1"})
             mgr_headers = {"Authorization": f"Bearer {mgr_token}"}
             resp_mgr = client.post(f"/api/notifications/{notif_id}/resolve", headers=mgr_headers)
             assert resp_mgr.status_code == 200

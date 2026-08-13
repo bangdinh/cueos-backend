@@ -103,7 +103,7 @@ def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
     store_roles_payload = [{"store_id": r.store_id, "role": r.role} for r in user_roles]
     
     # Determine the primary role (e.g. SUPER_ADMIN, OWNER, or the first one)
-    primary_role_str = "CASHIER"
+    primary_role_str = "STAFF"
     primary_store_id = None
     
     if user_roles:
@@ -187,7 +187,8 @@ def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
         "store_id": primary_store_id,
         "store_roles": store_roles_payload,
         "owned_store_ids": owned_store_ids,
-        "sid": sid
+        "sid": sid,
+        "force_password_change": getattr(user, "force_password_change", False)
     }
     token = create_access_token(payload)
     return LoginResponse(
@@ -195,6 +196,32 @@ def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
         token_type="bearer",
         user=payload
     )
+
+class ChangePasswordRequest(BaseModel):
+    new_password: str
+
+@router.post("/change-password")
+def change_password(req: ChangePasswordRequest, current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+    user = db.query(UserModel).filter(UserModel.id == current_user.get("user_id")).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    user.password_hash = req.new_password
+    user.force_password_change = False
+    db.commit()
+    
+    # Generate new token
+    payload = current_user.copy()
+    payload["force_password_change"] = False
+    
+    # We might want to clear old SID and generate new one, but for simplicity we keep it
+    token = create_access_token(payload)
+    
+    return {
+        "message": "Password changed successfully",
+        "access_token": token,
+        "token_type": "bearer"
+    }
 
 @router.post("/revoke_tokens/{target_user_id}")
 def revoke_tokens(target_user_id: int, request: Request, current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):

@@ -51,9 +51,9 @@ class TestHQRevenueComparisonTDD:
             assert revs == sorted(revs, reverse=True)
 
     def test_store_manager_cannot_access_revenue_comparison(self):
-        """STORE_MANAGER cố tình gọi endpoint so sánh doanh thu HQ -> Bị từ chối 403."""
+        """MANAGER cố tình gọi endpoint so sánh doanh thu HQ -> Bị từ chối 403."""
         with TestClient(app) as client:
-            mgr_token = create_access_token({"user_id": 2, "store_id": 1, "role": "STORE_MANAGER", "username": "mgr1"})
+            mgr_token = create_access_token({"user_id": 2, "store_id": 1, "role": "MANAGER", "username": "mgr1"})
             headers = {"Authorization": f"Bearer {mgr_token}"}
 
             resp = client.get("/api/hq/revenue-comparison", headers=headers)
