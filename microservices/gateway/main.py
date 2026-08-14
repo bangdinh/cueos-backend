@@ -15,6 +15,10 @@ app.add_middleware(
 
 SERVICES = {
     "auth": os.environ.get("AUTH_SERVICE_URL", "http://127.0.0.1:8001"),
+    "customer": os.environ.get("CUSTOMER_SERVICE_URL", "http://127.0.0.1:8007"),
+    "customers": os.environ.get("CUSTOMER_SERVICE_URL", "http://127.0.0.1:8007"),
+    "permissions": os.environ.get("AUTH_SERVICE_URL", "http://127.0.0.1:8001"),
+    "stores": os.environ.get("AUTH_SERVICE_URL", "http://127.0.0.1:8001"),
     "products": os.environ.get("INVENTORY_SERVICE_URL", "http://127.0.0.1:8002"),
     "tables": os.environ.get("INVENTORY_SERVICE_URL", "http://127.0.0.1:8002"),
     "session": os.environ.get("SESSION_SERVICE_URL", "http://127.0.0.1:8006"),

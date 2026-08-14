@@ -1,0 +1,22 @@
+meta {
+  name: 3. Cập nhật SĐT & Chi nhánh (auth.db)
+  type: http
+  seq: 3
+}
+
+put {
+  url: {{auth_service_url}}/api/customer/profile
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "phone": "0987654321",
+    "store_id": 1
+  }
+}

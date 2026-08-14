@@ -169,6 +169,7 @@ def list_stores(ctx: StoreContext = Depends(get_store_context)):
 
 @router.get('/hq/revenue-comparison')
 def get_revenue_comparison(period: str = 'month', store_ids: str = None, ctx: StoreContext = Depends(get_store_context)):
+    ctx.require_permission("perm:view_revenue")
     db = SessionLocal()
     try:
         from database.models.session import PlaySession, SessionOrderItem
@@ -272,6 +273,7 @@ def get_revenue_comparison(period: str = 'month', store_ids: str = None, ctx: St
 
 @router.get('/hq/overview')
 def get_hq_overview(ctx: StoreContext = Depends(get_store_context)):
+    ctx.require_permission("perm:view_revenue")
     db = SessionLocal()
     try:
         from database.models.session import PlaySession, SessionOrderItem
@@ -331,22 +333,23 @@ def get_hq_overview(ctx: StoreContext = Depends(get_store_context)):
         from services.store_service import StoreService
         stores = StoreService.get_all_stores(db)
         total_stores = len(stores)
+        from database.models.billiard_table import BilliardTable
         all_tables = db.query(BilliardTable).filter(BilliardTable.deleted_at == None).all()
         total_tables = len(all_tables)
         playing_tables = sum(1 for t in all_tables if t.current_status == 'PLAYING')
 
         stores_breakdown = []
-        for store in stores:
-            store_tables = [t for t in all_tables if t.store_id == store.id]
-            st_playing = sum(1 for t in store_tables if t.current_status == 'PLAYING')
-            st_total = len(store_tables)
+        for st in stores:
+            st_tables = [t for t in all_tables if t.store_id == st.id]
+            st_playing = sum(1 for t in st_tables if t.current_status == 'PLAYING')
+            st_total = len(st_tables)
             
-            st_today_sessions = [s for s in today_sessions if s.store_id == store.id]
+            st_today_sessions = [s for s in today_sessions if s.store_id == st.id]
             st_today_rev = sum((s.total_amount or ((s.play_fee or 0) + (s.services_fee or 0))) for s in st_today_sessions)
             
             stores_breakdown.append({
-                "store_id": store.id,
-                "name": store.name,
+                "id": st.id,
+                "name": st.name,
                 "active_tables": st_playing,
                 "total_tables": st_total,
                 "today_revenue": st_today_rev,
@@ -383,6 +386,7 @@ def get_store_revenue_report(
     preset: str = None,
     ctx: StoreContext = Depends(get_store_context)
 ):
+    ctx.require_permission("perm:view_revenue")
     db = SessionLocal()
     try:
         from database.models.session import PlaySession, SessionOrderItem

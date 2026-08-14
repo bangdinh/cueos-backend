@@ -11,7 +11,6 @@ from datetime import datetime, timedelta
 from database.database import get_db
 from database.models import UserModel, UserRole, UserStoreRole
 from database.models.store import StoreModel
-from database.models.auth_business import RefreshToken
 from api.utils.audit import log_audit_action
 
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "BIDA_AI_SECURE_JWT_SECRET_KEY_2026_CHANGE_IN_PROD")
@@ -198,14 +197,10 @@ def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
 
 @router.post("/revoke_tokens/{target_user_id}")
 def revoke_tokens(target_user_id: int, request: Request, current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
-    """API cho Admin thu hồi toàn bộ RefreshToken của một User"""
+    """API cho Admin thu hồi toàn bộ phiên làm việc của một User"""
     if current_user.get("role") != UserRole.SUPER_ADMIN.value:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied")
         
-    tokens = db.query(RefreshToken).filter(RefreshToken.user_id == target_user_id, RefreshToken.revoked_at == None).all()
-    for t in tokens:
-        t.revoked_at = datetime.utcnow()
-    
     if target_user_id in ACTIVE_USER_SESSIONS:
         del ACTIVE_USER_SESSIONS[target_user_id]
         
@@ -219,4 +214,5 @@ def revoke_tokens(target_user_id: int, request: Request, current_user: dict = De
     )
         
     db.commit()
-    return {"message": f"Revoked {len(tokens)} tokens for user {target_user_id}"}
+    return {"message": f"Successfully revoked all sessions for user {target_user_id}"}
+

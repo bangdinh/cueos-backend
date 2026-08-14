@@ -1,0 +1,22 @@
+meta {
+  name: 1. Đăng nhập Keycloak (Lấy Token)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{keycloak_url}}/realms/bida-realm/protocol/openid-connect/token
+  body: formUrlEncoded
+  auth: none
+}
+
+body:form-urlencoded {
+  client_id: bida-app
+  username: khachhang1
+  password: 123456
+  grant_type: password
+}
+
+vars:post-response {
+  token: res.body.access_token
+}

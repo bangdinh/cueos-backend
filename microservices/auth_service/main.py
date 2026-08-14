@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .database import init_db
-from .routes import auth, staff
+from .routes import auth, staff, roles
 
 app = FastAPI(title="Auth Service")
 
@@ -19,3 +19,4 @@ def on_startup():
 
 app.include_router(auth.router, tags=["Auth"])
 app.include_router(staff.router)
+app.include_router(roles.router)

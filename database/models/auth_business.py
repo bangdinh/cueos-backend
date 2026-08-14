@@ -4,27 +4,6 @@ from database.models.user import UserRole
 from database.models.base import Base
 from datetime import datetime
 
-class RefreshToken(Base):
-    __tablename__ = "refresh_tokens"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    token_hash = Column(String(255), nullable=False)
-    device_info = Column(String(255), nullable=True)
-    expires_at = Column(DateTime, nullable=False)
-    revoked_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-class PasswordResetToken(Base):
-    __tablename__ = "password_reset_tokens"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    token_hash = Column(String(255), nullable=False)
-    expires_at = Column(DateTime, nullable=False)
-    used_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-
 class AuditLog(Base):
     __tablename__ = "audit_logs"
     

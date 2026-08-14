@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "Bida AI System - Auth & Keycloak",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}

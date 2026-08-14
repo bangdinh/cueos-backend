@@ -8,11 +8,11 @@ Tài liệu này mô tả chi tiết kiến trúc của cơ sở dữ liệu `au
 2.  **Tích hợp Cơ chế Bảo mật (Security Context):**
     *   **Brute-force protection:** Đếm số lần đăng nhập sai và khoá tài khoản (cột `failed_login_attempts`, `locked_until` trong `users`).
     *   **Audit Logging:** Truy vết hành động nhạy cảm của người dùng (bảng `audit_logs`).
-    *   **Token Management:** Quản lý vòng đời Refresh Token và Token Đổi mật khẩu (bảng `refresh_tokens`, `password_reset_tokens`).
+    *   **Token Management:** Quản lý vòng đời Token (Access/Refresh Token, Password Reset) được ủy thác hoàn toàn cho **Keycloak IAM** đảm nhiệm. Loại bỏ dead tables `refresh_tokens` và `password_reset_tokens` khỏi `auth.db`.
     *   **Staff Creation (Luồng chính):** Admin trực tiếp tạo tài khoản nhân viên mới (`users`), bắt buộc nhân viên đổi mật khẩu ở lần đăng nhập đầu tiên (`force_password_change`).
     *   **Staff Invitations (Luồng dự phòng):** Hỗ trợ mời nhân viên tham gia (ví dụ: nhân sự làm từ xa) thông qua bảng `staff_invitations`. Luồng này được giữ lại để sử dụng trong các tình huống đặc biệt, không phải luồng mặc định.
 
-## 2. Sơ đồ Cơ sở dữ liệu (ER Diagram)
+## 2. Sơ đồ Cơ sở dữ liệu Chuẩn (ER Diagram - 6 Tables)
 
 ```mermaid
 erDiagram
@@ -45,21 +45,12 @@ erDiagram
         DATETIME created_at 
     }
 
-    REFRESH_TOKENS {
+    CUSTOMERS {
         INTEGER id PK "AUTOINCREMENT"
-        INTEGER user_id FK "REFERENCES users(id)"
-        VARCHAR token "UNIQUE"
-        DATETIME expires_at 
-        DATETIME revoked_at "Nullable"
-        DATETIME created_at 
-    }
-
-    PASSWORD_RESET_TOKENS {
-        INTEGER id PK "AUTOINCREMENT"
-        INTEGER user_id FK "REFERENCES users(id)"
-        VARCHAR token "UNIQUE"
-        DATETIME expires_at 
-        DATETIME used_at "Nullable"
+        INTEGER store_id FK "REFERENCES stores(id)"
+        VARCHAR name 
+        VARCHAR phone 
+        INTEGER points 
         DATETIME created_at 
     }
 
@@ -90,8 +81,7 @@ erDiagram
     USERS ||--o{ USER_STORE_ROLES : "has roles (M-N)"
     STORES ||--o{ USER_STORE_ROLES : "managed by"
     USERS ||--o{ STORES : "owns (1-N)"
-    USERS ||--o{ REFRESH_TOKENS : "has sessions"
-    USERS ||--o{ PASSWORD_RESET_TOKENS : "requests reset"
+    STORES ||--o{ CUSTOMERS : "belongs to"
     USERS ||--o{ AUDIT_LOGS : "performs action"
     USERS ||--o{ STAFF_INVITATIONS : "invites"
     STORES ||--o{ STAFF_INVITATIONS : "receives staff"

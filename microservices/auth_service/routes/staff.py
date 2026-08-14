@@ -51,6 +51,13 @@ def create_staff(
             detail=f"You do not have a role in store {store_id}"
         )
         
+    # Check permission if caller has custom role permissions
+    client_roles = current_user.get("resource_access", {}).get("bida-app", {}).get("roles", [])
+    realm_roles = current_user.get("realm_access", {}).get("roles", [])
+    perms = [r for r in client_roles + realm_roles if r.startswith("perm:")]
+    if perms and "perm:manage_staff" not in perms and assigner_role_str != UserRole.OWNER.value:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Thiếu quyền: perm:manage_staff")
+
     try:
         assigner_role_enum = Role(assigner_role_str)
         target_role_enum = Role(req.role.upper())

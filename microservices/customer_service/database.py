@@ -2,13 +2,9 @@ import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from database.models.base import Base
+from database.models.customer import CustomerModel
 
-# Import models to ensure they are registered with Base before init_db
-from database.models.session import PlaySession, SessionOrderItem
-from database.models.notification import StaffNotification
-from database.models.store import StoreModel
-
-SQLALCHEMY_DATABASE_URL = "sqlite:///./billing.db"
+SQLALCHEMY_DATABASE_URL = os.getenv("CUSTOMER_DATABASE_URL", "sqlite:///./customer.db")
 connect_args = {"check_same_thread": False}
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args=connect_args)
@@ -25,9 +21,6 @@ def init_db():
     Base.metadata.create_all(
         bind=engine,
         tables=[
-            PlaySession.__table__,
-            SessionOrderItem.__table__,
-            StaffNotification.__table__,
-            StoreModel.__table__
+            CustomerModel.__table__
         ]
     )
