@@ -1,0 +1,27 @@
+meta {
+  name: 6. OWNER Tạo Custom Role (Keycloak)
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{auth_service_url}}/api/stores/1/roles
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "role_name": "PHUC_VU_BAN",
+    "display_name": "Nhân viên Phục vụ Bàn",
+    "permissions": [
+      "perm:manage_tables",
+      "perm:view_inventory",
+      "perm:view_own_shift"
+    ]
+  }
+}
